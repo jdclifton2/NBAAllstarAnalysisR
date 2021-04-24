@@ -6,4 +6,57 @@ abstract: "Each NBA season, 24 players are selected to be allstars. The selectio
 output: html_document
 ---
 
+```{r}
+library(readr)
+library(tibble)
+library(ggplot2)
+#library(GGally)
+library(dplyr)
+DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
+nba_df = na.omit(DF)
+names(nba_df)
+nba_df$is_allstar = as.logical(nba_df$is_allstar)
+nbaTib = as_tibble(nba_df)
+
+ggplot(nbaTib, aes(x = factor(is_allstar), fill = is_allstar)) +
+    geom_bar()
+```
+```{r}
+ggplot(data = nbaTib) +
+  geom_point(mapping = aes(x = FGA, y = FG, color = is_allstar, shape=is_allstar))
+```
+```{r}
+filtered = select(nbaTib, -c(Pos, Tm, Name, Year))
+```
+
+# Modeling
+
+First we split the data into training and testing.
+```{r}
+train = sample(dim(filtered)[1], dim(filtered)[1]/2)
+test = filtered[-train, ]
+```
+
+We will now perform logistic regression.
+```{r}
+logReg = glm(is_allstar~., data=filtered, subset = train, family=binomial)
+summary(logReg)
+```
+
+
+```{r}
+attach(filtered)
+probs = predict(logReg, test, type="response")
+preds = rep(FALSE, length(probs))
+preds[probs >.5]=TRUE
+table(preds, test$is_allstar)
+mean(preds == test$is_allstar)
+tpr = 101/273
+fpr = 33/(6987 + 172 +33 + 101)
+
+```
+Although the models accuracy is decently high, it is a trivial problem to predict who is NOT an allstar. We would like to predict who IS an allstar. Therefore, we are concerned with the recall (i.e. the true positive rate) of the model. In this case, the recall is 36%.
+
+
+
 
