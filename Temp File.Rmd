@@ -1,7 +1,8 @@
 ---
-title: "All Star"
-author: "Maxwell Pitney"
+title: "Predicting NBA Allstars"
+author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
 date: "4/24/2021"
+abstract: "Each NBA season, 24 players are selected to be allstars. The selection process involves fans voting for players they would like to see. Players voted in by fans are selected as starters and then coaches select the 7 bench players. We offer several models for predicting if a player is an allstar based on various statistics tracked throughout the season."
 output: html_document
 ---
 
