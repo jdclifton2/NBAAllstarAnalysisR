@@ -57,12 +57,16 @@ test = cleanDF[-train, ]
 ```
 
 ```{r}
-library(reshape2)
-cor = cor(cleanDF)
-melted_cormat = melt(cor)
-# ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
-#   geom_tile() +
-#   options(repr.P.width=4,repr.P.height=3)
+#trying to make correlation map
+# library(reshape2)
+# library(ggcorrplot)
+# names(cleanDF)
+# cor = cor(cleanDF)
+# as_tibble(cor[cor > 0.7])
+# ggcorrplot(cor[cor > .7])
+# ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
+#   geom_tile()
+
 ```
 
 
