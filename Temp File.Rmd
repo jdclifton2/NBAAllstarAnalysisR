@@ -6,12 +6,14 @@ abstract: "Each NBA season, 24 players are selected to be allstars. The selectio
 output: html_document
 ---
 
+Models that did not work: QDA, Logistic.
 ```{r}
 library(readr)
 library(tibble)
 library(ggplot2)
 #library(GGally)
 library(dplyr)
+set.seed(23)
 DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
 nba_df = na.omit(DF)
 names(nba_df)
@@ -54,16 +56,38 @@ train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
 test = cleanDF[-train, ]
 ```
 
+```{r}
+library(reshape2)
+cor = cor(cleanDF)
+melted_cormat = melt(cor)
+# ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+#   geom_tile() +
+#   options(repr.P.width=4,repr.P.height=3)
+```
+
+
 We will now perform logistic regression.
 ```{r}
-
+library(MASS)
+lda_fit = lda(was_mvp~., data = cleanDF, subset=train)
+lda_pred = predict(lda_fit, test)
+table(lda_pred$class,test$was_mvp)
+mean(lda_pred$class == test$was_mvp)
+tpr = 18/(4 + 18)
+fpr = 48/(48 + 7223)
+tpr
+fpr
+cor
 ```
-
+In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
 ```{r}
-
+# qdaFit = qda(was_mvp~., data = cleanDF, subset = train)
+# pred = predict(qdaFit, test)
+# table(pred$class, test$was_mvp)
+# mean(pred$class == test$was_mvp)
 ```
-Although the models accuracy is decently high, it is a trivial problem to predict who is NOT an allstar. We would like to predict who IS an allstar. Therefore, we are concerned with the recall (i.e. the true positive rate) of the model. In this case, the recall is 36%.
+
 
 
 
