@@ -2,7 +2,7 @@
 title: "Predicting NBA Allstars"
 author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
 date: "4/24/2021"
-abstract: "Each NBA season, 24 players are selected to be allstars. The selection process involves fans voting for players they would like to see. Players voted in by fans are selected as starters and then coaches select the 7 bench players. We offer several models for predicting if a player is an allstar based on various statistics tracked throughout the season."
+abstract: "The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won the NBA mvp. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? We offer several models that attempt to predict the NBA MVP given player season statistics such as points, blocks, etc."
 output: html_document
 ---
 
@@ -56,6 +56,8 @@ train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
 test = cleanDF[-train, ]
 ```
 
+
+The first model that we are going to fit will be an LDA model. It is important to remember that one of the assumptions of LDA is that none of the features are heavily correlated. We will first examine a correlation matrix of our data. 
 ```{r}
 library(corrplot)
 library(caret)
@@ -64,30 +66,64 @@ library(caret)
 # library(ggcorrplot)
 # names(cleanDF)
 corMat = cor(cleanDF)
-
 corrplot(corMat, tl.cex=0.5,method="shade")
 
-corMat
-names = findCorrelation(corMat, cutoff = .6, verbose = TRUE, names = TRUE)
 # as_tibble(cor[cor > 0.7])
 # ggcorrplot(cor[cor > .7])
 # ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
 #   geom_tile()
 ```
+It can be seen that there are many heavily correlated features. We will now drop some of these features. 
+
+```{r}
+names = findCorrelation(corMat, cutoff = .5, verbose = TRUE, names = TRUE)
+
+nonCorDF = select(cleanDF, -all_of(names))
+
+corMat2 = cor(nonCorDF)
+
+corrplot(corMat2, tl.cex=0.5,method="shade")
+```
 
 
-We will now perform logistic regression.
+Now that we have removed heavily correlated features, we will now perform lda.
 ```{r}
 library(MASS)
-lda_fit = lda(was_mvp~., data = cleanDF, subset=train)
-lda_pred = predict(lda_fit, test)
-table(lda_pred$class,test$was_mvp)
-mean(lda_pred$class == test$was_mvp)
-tpr = 18/(4 + 18)
-fpr = 48/(48 + 7223)
-tpr
-fpr
-cor
+
+truePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(tp/(tp + fn))
+}
+
+falseNegative <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fn/(tp + fn))
+}
+
+f1Score <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(2*tp/(2 * tp + fp + fn))
+}
+
+trainNonCor = sample(dim(nonCorDF)[1], dim(nonCorDF)[1]/2)
+testNonCor = nonCorDF[-train, ]
+ldaFit = lda(was_mvp~., data = nonCorDF, subset=train)
+ldaPred = predict(ldaFit, testNonCor)
+ldaTable = table(ldaPred$class,testNonCor$was_mvp)
+ldaTable
+mean(ldaPred$class == testNonCor$was_mvp)
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
 ```
 In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
