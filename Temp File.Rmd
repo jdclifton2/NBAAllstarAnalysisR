@@ -58,6 +58,7 @@ test = cleanDF[-train, ]
 
 ```{r}
 library(corrplot)
+library(caret)
 #trying to make correlation map
 # library(reshape2)
 # library(ggcorrplot)
@@ -65,6 +66,9 @@ library(corrplot)
 corMat = cor(cleanDF)
 
 corrplot(corMat, tl.cex=0.5,method="shade")
+
+corMat
+names = findCorrelation(corMat, cutoff = .6, verbose = TRUE, names = TRUE)
 # as_tibble(cor[cor > 0.7])
 # ggcorrplot(cor[cor > .7])
 # ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
