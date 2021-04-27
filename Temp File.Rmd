@@ -1,12 +1,16 @@
 ---
-title: "Predicting NBA Allstars"
+title: "Predicting The NBA MVP"
 author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
 date: "4/24/2021"
-abstract: "The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won the NBA mvp. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? We offer several models that attempt to predict the NBA MVP given player season statistics such as points, blocks, etc."
+abstract: "The NBA most valuable player award is given to one player every NBA season. There have been 65 different players who have won this award. In this paper, we offer several models that attempt to predict the NBA MVP. These models will be using individual player data tracked over the course of a season. "
 output: html_document
 ---
 
-Models that did not work: QDA, Logistic.
+# Introduction
+
+The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won this award. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? Given player statistics, can we accurately predict what player will win the MVP award in a given year? In this paper, we attempt to answer that very question. In order to do this, we frame the problem in terms of classification. Thus, we will create binary classifiers that, when given player statistics can classify that player as an MVP or not. Some models we will be using include LDA and KNN
+
+
 ```{r}
 library(readr)
 library(tibble)
@@ -20,15 +24,14 @@ names(nba_df)
 nba_df$was_mvp = as.logical(nba_df$was_mvp)
 nbaTib = as_tibble(nba_df)
 cleanDF = select(nbaTib, -c(Pos, Tm, Name, Year, is_allstar))
-
-# ggplot(nbaTib, aes(x = factor(is_allstar), fill = is_allstar)) +
-#     geom_bar()
+attach(cleanDF)
+names(nbaTib)
 ```
 
 
 ```{r}
 ggplot(data = nbaTib) +
-  geom_point(mapping = aes(x = FGA, y = FG, color = was_mvp, shape=was_mvp))
+  geom_point(mapping = aes(x = FGA, y = PTS, color = was_mvp, shape=was_mvp))
 ```
 
 
@@ -54,6 +57,10 @@ First we split the data into training and testing.
 ```{r}
 train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
 test = cleanDF[-train, ]
+dfLT2000 = filter(nbaTib, Year <= 2000)
+dfLT2000 = select(dfLT2000, -c(Pos, Tm, Name, Year, is_allstar))
+dfGT2000 = filter(nbaTib, Year > 2000)
+dfGT2000 = select(dfGT2000, -c(Pos, Tm, Name, Year, is_allstar) )
 ```
 
 
@@ -89,7 +96,6 @@ corrplot(corMat2, tl.cex=0.5,method="shade")
 Now that we have removed heavily correlated features, we will now perform lda.
 ```{r}
 library(MASS)
-
 truePositive <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -135,14 +141,123 @@ falseNegative(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable)
 ```
-In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
 ```{r}
-# qdaFit = qda(was_mvp~., data = cleanDF, subset = train)
-# pred = predict(qdaFit, test)
-# table(pred$class, test$was_mvp)
-# mean(pred$class == test$was_mvp)
+corMat3 = cor(dfLT2000)
+names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
+
+nonCorDfLT2000 = select(dfLT2000, -all_of(names))
+nonCorDfGT2000 = select(dfGT2000, -all_of(names))
+
+ldaFit = lda(was_mvp~., data = nonCorDfLT2000)
+ldaPred = predict(ldaFit, nonCorDfGT2000)
+ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
+ldaTable
+mean(ldaPred$class == dfGT2000$was_mvp)
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
 ```
+
+In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
+
+
+We will now perform an LDA using leave one out cross validation. 
+```{r}
+ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
+ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
+ldaTable
+mean(ldaFit$class ==  nonCorDF$was_mvp)
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
+```
+We will now attempt to perform a KNN.
+
+```{r}
+library(class)
+names(cleanDF)
+trainX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
+               AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
+               BPM, VORP, FG, FGA, FG., X3P, X3PA, X3P., X2P, X2PA, X2P.,
+               eFG., FT, FTA, FT., ORB, DRB, TRB, AST, STL, BLK, TOV, PF, PTS
+               )[train, ]
+testX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
+               AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
+               BPM, VORP, FG, FGA, FG., X3P, X3PA, X3P., X2P, X2PA, X2P.,
+               eFG., FT, FTA, FT., ORB, DRB, TRB, AST, STL, BLK, TOV, PF, PTS)[-train, ]
+trainY = cleanDF[train, ]$was_mvp
+testY = cleanDF[-train, ]$was_mvp
+
+knnPred=knn(trainX, testX, trainY, k=1)
+mean(knnPred == testY)
+knnTable1 = table(knnPred, testY)
+truePositive(knnTable1)
+falseNegative(knnTable1)
+f1Score(knnTable1)
+mcc(knnTable1)
+
+knnPred2 = knn(trainX,testX,trainY, k=3)
+mean(knnPred2 == testY)
+knnTable2 = table(knnPred2, testY)
+knnTable2
+truePositive(knnTable2)
+falseNegative(knnTable2)
+f1Score(knnTable2)
+mcc(knnTable2)
+
+knnPred3 = knn(trainX, testX, trainY, k=4)
+mean(knnPred3 == testY)
+knnTable3 = table(knnPred3, testY)
+truePositive(knnTable3)
+falseNegative(knnTable3)
+f1Score(knnTable3)
+mcc(knnTable3)
+
+knnPred4 = knn(trainX,testX,trainY,k=2)
+mean(knnPred4 == testY)
+knnTable4 = table(knnPred4, testY)
+truePositive(knnTable4)
+falseNegative(knnTable4)
+f1Score(knnTable4)
+mcc(knnTable4)
+
+# knnPred5 = knn(trainX,testX,trainY,k=5)
+# mean(knnPred5 == testY)
+# knnTable5 = table(knnPred5, testY)
+# knnTable5
+# truePositive(knnTable5)
+# falseNegative(knnTable5)
+# f1Score(knnTable5)
+# mcc(knnTable5)
+# 
+# for(i in 1:13) {
+#   knnPredi = knn(trainX,testX,trainY,k=i)
+#   knnTablei = table(knnPredi, testY)
+#   print(mcc(knnTablei))
+# }
+```
+We find that for knn, a k = 4 is the most effective model with an mcc score of
+$24\%$. That being said, none of these models are particularly effective.
+
+
+We will now fit a decision tree. 
+```{r}
+# library (tree)
+# dt = tree(was_mvp~.,data=cleanDF, subset=train)
+# plot(dt)
+# text(dt ,pretty=0)
+# yHat = predict(dt, newdata = test, type='class)
+
+library(rpart)
+library(rpart.plot)
+fit = rpart(was_mvp ~., data=cleanDF, method='class')
+rpart.plot(fit)
+
+```
+
 
 
 
