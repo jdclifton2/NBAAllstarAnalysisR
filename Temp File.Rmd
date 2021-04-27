@@ -93,9 +93,8 @@ corrplot(corMat2, tl.cex=0.5,method="shade")
 ```
 
 
-Now that we have removed heavily correlated features, we will now perform lda.
+
 ```{r}
-library(MASS)
 truePositive <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -129,6 +128,27 @@ mcc <- function(table) {
   return(((tp * tn) - (fp * fn))/divisor)
 }
 
+corMat3 = cor(dfLT2000)
+names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
+
+nonCorDfLT2000 = select(dfLT2000, -all_of(names))
+nonCorDfGT2000 = select(dfGT2000, -all_of(names))
+library(MASS)
+ldaFit = lda(was_mvp~., data = nonCorDfLT2000)
+ldaPred = predict(ldaFit, nonCorDfGT2000)
+ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
+ldaTable
+mean(ldaPred$class == dfGT2000$was_mvp)
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
+```
+
+Now that we have removed heavily correlated features, we will now perform lda.
+```{r}
+
+
 trainNonCor = sample(dim(nonCorDF)[1], dim(nonCorDF)[1]/2)
 testNonCor = nonCorDF[-train, ]
 ldaFit = lda(was_mvp~., data = nonCorDF, subset=train)
@@ -136,24 +156,6 @@ ldaPred = predict(ldaFit, testNonCor)
 ldaTable = table(ldaPred$class,testNonCor$was_mvp)
 ldaTable
 mean(ldaPred$class == testNonCor$was_mvp)
-truePositive(ldaTable)
-falseNegative(ldaTable)
-f1Score(ldaTable)
-mcc(ldaTable)
-```
-
-```{r}
-corMat3 = cor(dfLT2000)
-names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
-
-nonCorDfLT2000 = select(dfLT2000, -all_of(names))
-nonCorDfGT2000 = select(dfGT2000, -all_of(names))
-
-ldaFit = lda(was_mvp~., data = nonCorDfLT2000)
-ldaPred = predict(ldaFit, nonCorDfGT2000)
-ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
-ldaTable
-mean(ldaPred$class == dfGT2000$was_mvp)
 truePositive(ldaTable)
 falseNegative(ldaTable)
 f1Score(ldaTable)
