@@ -164,16 +164,14 @@ mcc(ldaTable)
 
 Logistical
 ```{r}
-G+X3P+DRB+AST+BLK+PF+PTS+Team.Wins
-
-logFit <- glm(was_mvp ~ G + DRB + BLK + PF + PTS, data = nonCorDF, subset = trainNonCor, family = binomial(link = "logit"))
+logFit <- glm(was_mvp ~ ., data = nonCorDF, subset = trainNonCor, family = binomial(link = "logit"))
 
 #summary(logFit)
 
 probLog = predict(logFit, data = testNonCor, type = "response")
 
 predLog = ifelse(probLog > 0.5, "1", "0")
-predLog
+#predLog
 
 Acuracy = mean(probLog == testNonCor$was_mvp)
 Acuracy
