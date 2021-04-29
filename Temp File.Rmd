@@ -278,23 +278,31 @@ library(rsample)
 fit = rpart(was_mvp ~., data=cleanDF, method='class')
 rpart.plot(fit)
 
-treeSplit <- initial_split(cleanDF, prop = .7)
+treeSplit <- initial_split(cleanDF, prop = .5)
 treeTrain <- training(treeSplit)
 treeTest  <- testing(treeSplit)
 
 treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
 treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
+treeTest$was_mvp <- as.character(treeTest$was_mvp)
+treeTest$was_mvp <- as.factor(treeTest$was_mvp)
+
 
 # default RF model
 mvpForest <- randomForest(was_mvp ~ ., data = treeTrain)
 
 mvpForest
 
-predTrain <- predict(mvpForest, treeTrain, type = "class")
+predTrain <- predict(mvpForest, treeTest, type = "class")
 # Checking classification accuracy
-acc = table(predTrain, treeTrain$was_mvp)
+acc = table(predTrain, treeTest$was_mvp)
 
 acc
+
+truePositive(acc)
+falseNegative(acc)
+f1Score(acc)
+mcc(acc)
 
 importance(mvpForest)
 
