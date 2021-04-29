@@ -11,39 +11,55 @@ output: html_document
 The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won this award. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? Given player statistics, can we accurately predict what player will win the MVP award in a given year? In this paper, we attempt to answer that very question. In order to do this, we frame the problem in terms of classification. Thus, we will create binary classifiers that, when given player statistics can classify that player as an MVP or not. Some models we will be using include LDA, KNN, and decision trees.
 
 
-```{r}
+```{r setup, include=FALSE}
 library(readr)
 library(tibble)
 library(ggplot2)
 #library(GGally)
 library(dplyr)
+library(corrplot)
+library(caret)
+library(MASS)
+library(class)
+library(rpart)
+library(rpart.plot)
+
+
+
 set.seed(23)
 DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
 nba_df = na.omit(DF)
 names(nba_df)
 nba_df$was_mvp = as.logical(nba_df$was_mvp)
 nbaTib = as_tibble(nba_df)
-cleanDF = select(nbaTib, -c(Pos, Tm, Name, Year, is_allstar))
+cleanDF = dplyr::select(nbaTib, -c(Pos, Tm, Name, Year, is_allstar))
 attach(cleanDF)
 names(nbaTib)
 ```
 
+# Plots and Data Analyis
 
-```{r}
+First, we will do some preliminary data analysis and consider a few plots of the data. In our first plot, we produce a scatter plot displaying field goal attempts (i.e. the number of shots taken) on our x axis, and the number of points scored on the y axis. Red circles indicate players who did not win the MVP award, and blue triangles correspond with players who did win. As can be seen from the plot, MVP players tend to score higher and take more shots. 
+
+```{r fgavspts, echo=FALSE}
 ggplot(data = nbaTib) +
   geom_point(mapping = aes(x = FGA, y = PTS, color = was_mvp, shape=was_mvp))
 ```
 
+Next, we consider a breakdown of all MVP players by their position. This data comes from seasons between 1974 - 2017. We see that the center position has the most MVP players between this time frame. 
 
-```{r}
-ggplot(filter(DF, was_mvp == 1), aes(x = factor(Pos), fill = Pos)) +
+```{r mvphist1, echo=FALSE}
+ggplot(dplyr::filter(DF, was_mvp == 1), aes(x = factor(Pos), fill = Pos)) +
     geom_bar() +
     scale_y_continuous(breaks=c(4,6,8,10,12)) +
     labs(title="NBA MVPS by Position (1974 - 2017)",
         x ="Position", y = "frequency")
 ```
-```{r}
-ggplot(filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
+
+Unfortunately, statistics were not tracked properly prior to 1983, and therefor we omit this data from consideration. Below we display a histogram corresponding to all MVP players where accurate data was collected. 
+
+```{r mvphist2, echo=FALSE}
+ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
     geom_bar() +
     scale_y_continuous(breaks=c(4,6,8,10)) +
     labs(title="NBA MVPS by Position (1983 - 2017)",
@@ -53,21 +69,21 @@ ggplot(filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 
 # Modeling
 
-First we split the data into training and testing.
-```{r}
+The first problem that we have to consider is how we will split our data into training and testing sets. Initially, we simply split the data randomly. However, while this method may be valid in most contexts, it is not the most appropriate method for our problem domain. As discussed previously, a very small amount of players have won the MVP award, and we are considering an even smaller subset of those players. Therefore, if random sampling is performed it is entirely possible that our training sets contain 0 MVP players. For this reason, we have instead decided to partition the data based on the year. 
+```{r datasplitting, include=FALSE}
 train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
 test = cleanDF[-train, ]
-dfLT2000 = filter(nbaTib, Year <= 2000)
-dfLT2000 = select(dfLT2000, -c(Pos, Tm, Name, Year, is_allstar))
-dfGT2000 = filter(nbaTib, Year > 2000)
-dfGT2000 = select(dfGT2000, -c(Pos, Tm, Name, Year, is_allstar) )
+dfLT2000 = dplyr::filter(nbaTib, Year <= 2000)
+dfLT2000 = dplyr::select(dfLT2000, -c(Pos, Tm, Name, Year, is_allstar))
+dfGT2000 = dplyr::filter(nbaTib, Year > 2000)
+dfGT2000 = dplyr::select(dfGT2000, -c(Pos, Tm, Name, Year, is_allstar) )
+
 ```
 
 
 The first model that we are going to fit will be an LDA model. It is important to remember that one of the assumptions of LDA is that none of the features are heavily correlated. We will first examine a correlation matrix of our data. 
-```{r}
-library(corrplot)
-library(caret)
+```{r originalCorr, echo=FALSE}
+
 #trying to make correlation map
 # library(reshape2)
 # library(ggcorrplot)
@@ -80,18 +96,21 @@ corrplot(corMat, tl.cex=0.5,method="shade")
 # ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
 #   geom_tile()
 ```
-It can be seen that there are many heavily correlated features. We will now drop some of these features. 
 
-```{r}
+It can be seen that there are many heavily correlated features. We will now drop features with correlation higher or lower than than |.7|. 
+ 
+
+```{r dropCorr, include=FALSE}
 names = findCorrelation(corMat, cutoff = .7, verbose = TRUE, names = TRUE)
 
-nonCorDF = select(cleanDF, -all_of(names))
+nonCorDF = dplyr::select(cleanDF, -all_of(names))
+```
+```{r newCorr, include=FALSE}
 
 corMat2 = cor(nonCorDF)
 
 corrplot(corMat2, tl.cex=0.5,method="shade")
 ```
-
 
 
 ```{r}
@@ -131,10 +150,9 @@ mcc <- function(table) {
 corMat3 = cor(dfLT2000)
 names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
 
-nonCorDfLT2000 = select(dfLT2000, -all_of(names))
-nonCorDfGT2000 = select(dfGT2000, -all_of(names))
+nonCorDfLT2000 = dplyr::select(dfLT2000, -all_of(names))
+nonCorDfGT2000 = dplyr::select(dfGT2000, -all_of(names))
 
-library(MASS)
 
 ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
@@ -194,7 +212,6 @@ mcc(ldaTable)
 We will now attempt to perform a KNN.
 
 ```{r}
-library(class)
 names(cleanDF)
 trainX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
                AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
@@ -260,7 +277,7 @@ We find that for knn, a k = 4 is the most effective model with an mcc score of
 $24\%$. That being said, none of these models are particularly effective.
 
 
-We will now fit a decision tree. 
+We will now fit a random forest. 
 ```{r}
 # library (tree)
 # dt = tree(was_mvp~.,data=cleanDF, subset=train)
@@ -268,8 +285,7 @@ We will now fit a decision tree.
 # text(dt ,pretty=0)
 # yHat = predict(dt, newdata = test, type='class)
 
-library(rpart)
-library(rpart.plot)
+
 
 fit = rpart(was_mvp ~., data=cleanDF, method='class')
 rpart.plot(fit)
