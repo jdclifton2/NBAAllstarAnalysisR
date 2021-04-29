@@ -173,11 +173,8 @@ probLog = predict(logFit, data = testNonCor, type = "response")
 predLog = ifelse(probLog > 0.5, "1", "0")
 #predLog
 
-Acuracy = mean(probLog == testNonCor$was_mvp)
-Acuracy
-
-test_error = mean(probLog == testNonCor$was_mvp)
-test_error
+acuracy = mean(probLog == testNonCor$was_mvp)
+acuracy
 ```
 
 In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
