@@ -8,7 +8,7 @@ output: html_document
 
 # Introduction
 
-The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won this award. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? Given player statistics, can we accurately predict what player will win the MVP award in a given year? In this paper, we attempt to answer that very question. In order to do this, we frame the problem in terms of classification. Thus, we will create binary classifiers that, when given player statistics can classify that player as an MVP or not. Some models we will be using include LDA and KNN
+The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won this award. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? Given player statistics, can we accurately predict what player will win the MVP award in a given year? In this paper, we attempt to answer that very question. In order to do this, we frame the problem in terms of classification. Thus, we will create binary classifiers that, when given player statistics can classify that player as an MVP or not. Some models we will be using include LDA, KNN, and decision trees.
 
 
 ```{r}
