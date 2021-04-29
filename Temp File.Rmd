@@ -273,47 +273,35 @@ We will now fit a decision tree.
 
 library(rpart)
 library(rpart.plot)
-library(randomForest)
-library(rsample)
+
 fit = rpart(was_mvp ~., data=cleanDF, method='class')
 rpart.plot(fit)
+
+library(randomForest)
+library(rsample)
 
 treeSplit <- initial_split(cleanDF, prop = .5)
 treeTrain <- training(treeSplit)
 treeTest  <- testing(treeSplit)
 
+# treeTrain = sample(dim(cleanDF)[1], dim(cleanDF)[1]*0.7)
+# treeTest = nonCorDF[-treeTrain, ]
+# wasMvpTest = cleanDF[treeTrain,'was_mvp']
+
 treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
 treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
-treeTest$was_mvp <- as.character(treeTest$was_mvp)
-treeTest$was_mvp <- as.factor(treeTest$was_mvp)
 
-
-# default RF model
 mvpForest <- randomForest(was_mvp ~ ., data = treeTrain)
-
 mvpForest
 
 predTrain <- predict(mvpForest, treeTest, type = "class")
-# Checking classification accuracy
 acc = table(predTrain, treeTest$was_mvp)
-
 acc
 
 truePositive(acc)
 falseNegative(acc)
 f1Score(acc)
 mcc(acc)
-
-importance(mvpForest)
-
-a=c()
-i=5
-for (i in 3:8) {
-  mvpForest2 <- randomForest(was_mvp ~ ., data = treeTrain, ntree = 500, mtry = i, importance = TRUE)
-  predValid <- predict(mvpForest2, cleanDF, type = "class")
-  a[i-2] = mean(predValid == cleanDF$was_mvp)
-}
-a
 ```
 
 
