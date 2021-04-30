@@ -345,24 +345,10 @@ $24\%$. That being said, none of these models are particularly effective.
 
 We will now fit a random forest. 
 ```{r}
-# library (tree)
-# dt = tree(was_mvp~.,data=cleanDF, subset=train)
-# plot(dt)
-# text(dt ,pretty=0)
-# yHat = predict(dt, newdata = test, type='class)
-
-
-
-fit = rpart(was_mvp ~., data=cleanDF, method='class')
-rpart.plot(fit)
 
 treeSplit <- initial_split(cleanDF, prop = .5)
 treeTrain <- training(treeSplit)
 treeTest  <- testing(treeSplit)
-
-# treeTrain = sample(dim(cleanDF)[1], dim(cleanDF)[1]*0.7)
-# treeTest = nonCorDF[-treeTrain, ]
-# wasMvpTest = cleanDF[treeTrain,'was_mvp']
 
 treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
 treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
@@ -452,5 +438,56 @@ mcc(logTable2)
 ```
 
 
+```{r}
+
+treeSplit <- initial_split(cleanDF, prop = .5)
+treeTrain <- training(treeSplit)
+treeTest  <- testing(treeSplit)
+
+treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
+treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
+
+mvpForest <- randomForest(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS, data = treeTrain, importance = TRUE)
+mvpForest
+
+varImpPlot(mvpForest, sort=TRUE)
+
+predTest <- predict(mvpForest, treeTest, type = "class")
+
+mvpForest$importance
+mvpForest$confusion
+acc = table(predTest, treeTest$was_mvp)
+acc
+
+truePositive(acc)
+falseNegative(acc)
+f1Score(acc)
+mcc(acc)
+```
 
 
+```{r}
+
+dfLT2000$was_mvp <- as.character(dfLT2000$was_mvp)
+dfLT2000$was_mvp <- as.factor(dfLT2000$was_mvp)
+
+dfGT2000$was_mvp <- as.character(dfGT2000$was_mvp)
+dfGT2000$was_mvp <- as.factor(dfGT2000$was_mvp)
+
+mvpForest <- randomForest(was_mvp ~ ., data = dfLT2000, importance = TRUE)
+mvpForest
+
+varImpPlot(mvpForest, sort=TRUE)
+
+predTest <- predict(mvpForest, dfGT2000, type = "class")
+
+mvpForest$importance
+mvpForest$confusion
+acc = table(predTest, dfGT2000$was_mvp)
+acc
+
+truePositive(acc)
+falseNegative(acc)
+f1Score(acc)
+mcc(acc)
+```
