@@ -10,6 +10,16 @@ output: html_document
 
 The most prized individual accolade for a player in the NBA is the Most Valuable Player award. Winning this award signifies that coaches, the media, and former players thought that the winner was the most important player in the NBA. There have been 65 different players who have won this award. These players played different positions, had different statistics, and come from different eras. What then, do they have in common? Given player statistics, can we accurately predict what player will win the MVP award in a given year? In this paper, we attempt to answer that very question. In order to do this, we frame the problem in terms of classification. Thus, we will create binary classifiers that, when given player statistics can classify that player as an MVP or not. Some models we will be using include LDA, KNN, and decision trees.
 
+# Data Source and Variable Description
+
+We will be considering data about player statistics tracked over the course of a season. Our data is a combination of two other datasets. The first is a dataset of NBA season statistics from the years 1950-2017 contained at https://www.kaggle.com/drgilermo/nba-players-stats. The data in this dataset was scraped from www.basketball-reference.com, a website dedicated to tracking basketball statistics. In order to get the players that won the MVP award, more data was scraped from basketball-reference using the beautifulSoup python package. These two datasets were then combined to form the one that is used in this project. 
+
+### Variable Description
+
+Since the data was pulled from basketball-reference, descriptions of variables can be found on their website at:
+https://www.basketball-reference.com/about/glossary.html
+
+
 
 ```{r setup, include=FALSE}
 library(readr)
@@ -38,7 +48,59 @@ attach(cleanDF)
 names(nbaTib)
 ```
 
-# Plots and Data Analyis
+# Methods
+
+### Scoring Our Models
+
+Before we can discuss the actual modeling of the problem, it is important to understand how the accuracy of models will be assessed. In a classification problem, there a few metrics that can be considered. Some of the metrics that will be considered are standard to all classification problems such as accuracy, true positive rate, false positive rate, true negative rate, and false negative rate. In the context of our problem domain, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The metric of most interest for this problem, is the true positive rate. It is important to note that many of the models contained in this paper will have very high accuracy. This is due to the fact that there are so few players who win the MVP and so many that do not win that any model can simply guess non-MVP for every player and achieve high accuracy. On this account, we will be using metrics other than accuracy to score our models. These metrics are the f1 score and Matthews Correlation Coefficient (MCC). The F1 score can be interpreted as a weighted average of the precision and recall, where an F1 score reaches its best value at 1 and worst score at 0. The relative contribution of precision and recall to the F1 score are equal.
+
+The MCC produces a high score only if the prediction obtained good results in all of the four confusion matrix categories (true positives, false negatives, true negatives, and false positives), proportionally both to the size of positive elements and the size of negative elements in the dataset (Chicco, Gurman). 
+
+These metrics will be calculated using the following functions:
+
+```{r scoringFuncs, include = TRUE}
+truePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(tp/(tp + fn))
+}
+
+falseNegative <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fn/(tp + fn))
+}
+
+f1Score <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(2*tp/(2 * tp + fp + fn))
+}
+
+mcc <- function(table) {
+  tp = as.double(table[2,2])
+  tn = as.double(table[1,1])
+  fp = as.double(table[1,2])
+  fn = as.double(table[2,1])
+  divisor = sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+  return(((tp * tn) - (fp * fn))/divisor)
+}
+
+
+```
+
+# Validating the Data
+
+The first problem to consider is how to split the data into training and testing sets. Initially, we simply split the data randomly. However, while this method may be valid in most contexts, it is not the most appropriate method for our problem domain. As discussed previously, a very small amount of players have won the MVP award, and our data contains an even smaller subset of those players. Therefore, if random sampling is performed it is entirely possible that our training sets contain 0 MVP players. For this reason, we have instead decided in some cases to partition the data based on the year. 
+
+
+# Plots and Data Analysis
 
 First, we will do some preliminary data analysis and consider a few plots of the data. In our first plot, we produce a scatter plot displaying field goal attempts (i.e. the number of shots taken) on our x axis, and the number of points scored on the y axis. Red circles indicate players who did not win the MVP award, and blue triangles correspond with players who did win. As can be seen from the plot, MVP players tend to score higher and take more shots. 
 
@@ -67,14 +129,10 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
         x ="Position", y = "frequency")
 ```
 
-# Scoring Our Models
-
-Before we can discuss the actual modeling of the problem, it is important to understand how the accuracy of models will be assessed. In a classification problem, there a few metrics that can be considered. Some of the metrics that will be considered are standard to all classification problems such as accuracy, true positive rate, false positive rate, true negative rate, and false negative rate. In the context of our problem domain, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The metric of interest for this problem, is the true positive rate. 
-
 
 # Modeling
 
-The first problem that we have to consider is how we will split our data into training and testing sets. Initially, we simply split the data randomly. However, while this method may be valid in most contexts, it is not the most appropriate method for our problem domain. As discussed previously, a very small amount of players have won the MVP award, and we are considering an even smaller subset of those players. Therefore, if random sampling is performed it is entirely possible that our training sets contain 0 MVP players. For this reason, we have instead decided to partition the data based on the year. 
+
 ```{r datasplitting, include=FALSE}
 train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
 test = cleanDF[-train, ]
@@ -119,51 +177,15 @@ corrplot(corMat2, tl.cex=0.5,method="shade")
 ```
 
 
-```{r scoringFuncs, include = FALSE}
-truePositive <- function(table) {
-  tp = table[2,2]
-  tn = table[1,1]
-  fp = table[1,2]
-  fn = table[2,1]
-  return(tp/(tp + fn))
-}
-
-falseNegative <- function(table) {
-  tp = table[2,2]
-  tn = table[1,1]
-  fp = table[1,2]
-  fn = table[2,1]
-  return(fn/(tp + fn))
-}
-
-f1Score <- function(table) {
-  tp = table[2,2]
-  tn = table[1,1]
-  fp = table[1,2]
-  fn = table[2,1]
-  return(2*tp/(2 * tp + fp + fn))
-}
-
-mcc <- function(table) {
-  tp = as.double(table[2,2])
-  tn = as.double(table[1,1])
-  fp = as.double(table[1,2])
-  fn = as.double(table[2,1])
-  divisor = sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-  return(((tp * tn) - (fp * fn))/divisor)
-}
+```{r corMat3, include = FALSE}
 
 corMat3 = cor(dfLT2000)
 names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
 
-
-
-
-
 ```
 
 Now that we have removed heavily correlated features, we will now perform lda.
-```{r lda}
+```{r lda, include=FALSE}
 nonCorDfLT2000 = dplyr::select(dfLT2000, -all_of(names))
 nonCorDfGT2000 = dplyr::select(dfGT2000, -all_of(names))
 
@@ -181,7 +203,7 @@ f1Score(ldaTable)
 mcc(ldaTable)
 ```
 
-```{r lda2}
+```{r lda2, include=FALSE}
 
 ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
@@ -195,7 +217,7 @@ mcc(ldaTable)
 ```
 
 Logistical
-```{r logistic}
+```{r logistic, include=FALSE}
 logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial(link = "logit"))
 
 #summary(logFit)
@@ -219,7 +241,7 @@ For this model, the overall accuracy is very high at $99.28699\%$. The model cor
 
 
 We will now perform an LDA using leave one out cross validation. 
-```{r}
+```{r ldaloo, include=FALSE}
 ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
 ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
 ldaTable
@@ -323,20 +345,6 @@ falseNegative(knnTable4)
 f1Score(knnTable4)
 mcc(knnTable4)
 
-# knnPred5 = knn(trainX,testX,trainY,k=5)
-# mean(knnPred5 == testY)
-# knnTable5 = table(knnPred5, testY)
-# knnTable5
-# truePositive(knnTable5)
-# falseNegative(knnTable5)
-# f1Score(knnTable5)
-# mcc(knnTable5)
-# 
-for(i in 1:13) {
-  knnPredi = knn(trainX,testX,trainY,k=i)
-  knnTablei = table(knnPredi, testY)
-  print(mcc(knnTablei))
-}
 ```
 
 We find that for knn, a k = 4 is the most effective model with an mcc score of
@@ -344,7 +352,7 @@ $24\%$. That being said, none of these models are particularly effective.
 
 
 We will now fit a random forest. 
-```{r}
+```{r forest, include=FALSE}
 
 treeSplit <- initial_split(cleanDF, prop = .5)
 treeTrain <- training(treeSplit)
@@ -372,7 +380,7 @@ mcc(acc)
 ```
 
 
-```{r logistic2}
+```{r logistic2, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = cleanDF[train, ], family = binomial(link = "logit"))
 
 
@@ -394,7 +402,7 @@ mcc(logTable2)
 ```
 
 
-```{r logistic3}
+```{r logistic3, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
 
 
@@ -416,7 +424,7 @@ mcc(logTable2)
 ```
 
 
-```{r logistic4}
+```{r logistic4, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
 
 
@@ -437,4 +445,12 @@ mcc(logTable2)
 
 ```
 
+# Results
 
+# Conclusion
+
+# References
+
+Chicco, D., Jurman, G. The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation. BMC Genomics 21, 6 (2020). https://doi.org/10.1186/s12864-019-6413-7
+
+“Sklearn.metrics.f1_score¶.” Scikit, scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html. 
