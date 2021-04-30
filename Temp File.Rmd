@@ -19,10 +19,11 @@ library(ggplot2)
 library(dplyr)
 library(corrplot)
 library(caret)
-library(MASS)
 library(class)
 library(rpart)
 library(rpart.plot)
+library(randomForest)
+library(rsample)
 
 
 
@@ -66,6 +67,10 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
         x ="Position", y = "frequency")
 ```
 
+# Scoring Our Models
+
+Before we can discuss the actual modeling of the problem, it is important to understand how the accuracy of models will be assessed. In a classification problem, there a few metrics that can be considered. Some of the metrics that will be considered are standard to all classification problems such as accuracy, true positive rate, false positive rate, true negative rate, and false negative rate. In the context of our problem domain, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The metric of interest for this problem, is the true positive rate. 
+
 
 # Modeling
 
@@ -105,7 +110,8 @@ names = findCorrelation(corMat, cutoff = .7, verbose = TRUE, names = TRUE)
 
 nonCorDF = dplyr::select(cleanDF, -all_of(names))
 ```
-```{r newCorr, include=FALSE}
+We now offer the new correlation matrix for potential features of the LDA model. 
+```{r newCorr, echo= FALSE}
 
 corMat2 = cor(nonCorDF)
 
@@ -113,7 +119,7 @@ corrplot(corMat2, tl.cex=0.5,method="shade")
 ```
 
 
-```{r}
+```{r scoringFuncs, include = FALSE}
 truePositive <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -150,9 +156,32 @@ mcc <- function(table) {
 corMat3 = cor(dfLT2000)
 names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
 
+
+
+
+
+```
+
+Now that we have removed heavily correlated features, we will now perform lda.
+```{r lda}
 nonCorDfLT2000 = dplyr::select(dfLT2000, -all_of(names))
 nonCorDfGT2000 = dplyr::select(dfGT2000, -all_of(names))
 
+library(MASS)
+trainNonCor = sample(dim(nonCorDF)[1], dim(nonCorDF)[1]/2)
+testNonCor = nonCorDF[-trainNonCor, ]
+ldaFit = lda(was_mvp~., data = nonCorDF, subset=train)
+ldaPred = predict(ldaFit, testNonCor)
+ldaTable = table(ldaPred$class,testNonCor$was_mvp)
+ldaTable
+mean(ldaPred$class == testNonCor$was_mvp)
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
+```
+
+```{r lda2}
 
 ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
@@ -165,37 +194,28 @@ f1Score(ldaTable)
 mcc(ldaTable)
 ```
 
-Now that we have removed heavily correlated features, we will now perform lda.
-```{r}
-trainNonCor = sample(dim(nonCorDF)[1], dim(nonCorDF)[1]/2)
-testNonCor = nonCorDF[-train, ]
-ldaFit = lda(was_mvp~., data = nonCorDF, subset=train)
-ldaPred = predict(ldaFit, testNonCor)
-ldaTable = table(ldaPred$class,testNonCor$was_mvp)
-ldaTable
-mean(ldaPred$class == testNonCor$was_mvp)
-truePositive(ldaTable)
-falseNegative(ldaTable)
-f1Score(ldaTable)
-mcc(ldaTable)
-```
-
 Logistical
-```{r}
-logFit <- glm(was_mvp ~ ., data = nonCorDF, subset = trainNonCor, family = binomial(link = "logit"))
+```{r logistic}
+logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial(link = "logit"))
 
 #summary(logFit)
 
-probLog = predict(logFit, data = testNonCor, type = "response")
+probLog = predict(logFit, newdata = testNonCor, type = "response")
 
-predLog = ifelse(probLog > 0.5, "1", "0")
-#predLog
+predLog = ifelse(probLog > 0.5, TRUE, FALSE)
+acuracy = mean(predLog == testNonCor$was_mvp)
 
-acuracy = mean(probLog == testNonCor$was_mvp)
-acuracy
+logTable = table(predLog, testNonCor$was_mvp)
+logTable
+
+truePositive(logTable)
+falseNegative(logTable)
+f1Score(logTable)
+mcc(logTable)
+
 ```
 
-In the context of our problem, a true positive happens when a player was predicted as the MVP, and actually won the MVP. A true negative happens when a player was predicted as a non-MVP and was not the MVP. A false positive occurs when a player was predicted as the MVP but did not win the MVP. A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
+For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
 
 We will now perform an LDA using leave one out cross validation. 
@@ -211,7 +231,7 @@ mcc(ldaTable)
 ```
 We will now attempt to perform a KNN.
 
-```{r}
+```{r knn, include=TRUE}
 names(cleanDF)
 trainX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
                AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
@@ -290,9 +310,6 @@ We will now fit a random forest.
 fit = rpart(was_mvp ~., data=cleanDF, method='class')
 rpart.plot(fit)
 
-library(randomForest)
-library(rsample)
-
 treeSplit <- initial_split(cleanDF, prop = .5)
 treeTrain <- training(treeSplit)
 treeTest  <- testing(treeSplit)
@@ -304,11 +321,16 @@ treeTest  <- testing(treeSplit)
 treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
 treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
 
-mvpForest <- randomForest(was_mvp ~ ., data = treeTrain)
+mvpForest <- randomForest(was_mvp ~ ., data = treeTrain, importance = TRUE)
 mvpForest
 
-predTrain <- predict(mvpForest, treeTest, type = "class")
-acc = table(predTrain, treeTest$was_mvp)
+varImpPlot(mvpForest, sort=TRUE)
+
+predTest <- predict(mvpForest, treeTest, type = "class")
+
+mvpForest$importance
+mvpForest$confusion
+acc = table(predTest, treeTest$was_mvp)
 acc
 
 truePositive(acc)
@@ -318,7 +340,27 @@ mcc(acc)
 ```
 
 
+```{r logistic2}
+logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = cleanDF[train, ], family = binomial(link = "logit"))
 
+# was_mvp ~ VORP + WS * WS.48 * OWS + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS
+
+#summary(logFit)
+
+probLog2 = predict(logFit2, newdata = test, type = "response")
+
+predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
+acuracy2 = mean(predLog2 == test$was_mvp)
+
+logTable2 = table(predLog2, test$was_mvp)
+logTable2
+
+truePositive(logTable2)
+falseNegative(logTable2)
+f1Score(logTable2)
+mcc(logTable2)
+
+```
 
 
 
