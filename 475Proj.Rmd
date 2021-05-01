@@ -1,7 +1,7 @@
 ---
 title: "Predicting The NBA MVP"
 author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
-date: "4/24/2021"
+date: "05/04/2021"
 abstract: "The NBA most valuable player award is given to one player every NBA season. There have been 65 different players who have won this award. In this paper, we offer several models that attempt to predict the NBA MVP. These models will be using individual player data tracked over the course of a season. "
 output: html_document
 ---
@@ -159,7 +159,6 @@ nonCorDF = dplyr::select(cleanDF, -all_of(names))
 
 We now offer the new correlation matrix for potential features of the LDA model. 
 ```{r newCorr, echo= FALSE}
-
 corMat2 = cor(nonCorDF)
 
 corrplot(corMat2, tl.cex=0.5,method="shade")
@@ -167,10 +166,8 @@ corrplot(corMat2, tl.cex=0.5,method="shade")
 
 
 ```{r corMat3, include = FALSE}
-
 corMat3 = cor(dfLT2000)
 names = findCorrelation(corMat3, cutoff = .7, verbose = TRUE, names = TRUE)
-
 ```
 
 With heavily correlated features removed, an LDA model can be considered. This model was fit on a random split of the data. All non correlated variables were used to predict if the MVP.
@@ -199,17 +196,16 @@ mcc(ldaTable)
 
 This model will be fit on years prior to 2000 and tested on data from years greater than 2000.
 ```{r lda2, include=FALSE}
-
 ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
 ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
-ldaTable
 accuracy = mean(ldaPred$class == dfGT2000$was_mvp)
 ```
 
 #### Second LDA Results
 
 ```{r}
+ldaTable
 accuracy
 truePositive(ldaTable)
 falseNegative(ldaTable)
@@ -217,6 +213,22 @@ f1Score(ldaTable)
 mcc(ldaTable)
 ```
 
+### LOOCV LDA
+We will now perform an LDA using leave one out cross validation. 
+```{r ldaloo, include=FALSE}
+ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
+ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
+accuracy = mean(ldaFit$class ==  nonCorDF$was_mvp)
+```
+
+```{r}
+ldaTable
+accuracy
+truePositive(ldaTable)
+falseNegative(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable) 
+```
 
 ### Logistical Regression
 ```{r logistic, include=FALSE}
@@ -228,42 +240,21 @@ probLog = predict(logFit, newdata = testNonCor, type = "response")
 
 predLog = ifelse(probLog > 0.5, TRUE, FALSE)
 acuracy = mean(predLog == testNonCor$was_mvp)
-
 logTable = table(predLog, testNonCor$was_mvp)
-
 ```
 
 ```{r}
-accuracy
 logTable
+accuracy
 truePositive(logTable)
 falseNegative(logTable)
 f1Score(logTable)
 mcc(logTable)
-
 ```
 
 
 For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
-
-### LOOCV LDA
-We will now perform an LDA using leave one out cross validation. 
-```{r ldaloo, include=FALSE}
-ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
-ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
-ldaTable
-accuracy = mean(ldaFit$class ==  nonCorDF$was_mvp)
-
-```
-
-```{r}
-accuracy
-truePositive(ldaTable)
-falseNegative(ldaTable)
-f1Score(ldaTable)
-mcc(ldaTable)
-```
 
 ### KNN
 
@@ -280,7 +271,6 @@ testX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
                eFG., FT, FTA, FT., ORB, DRB, TRB, AST, STL, BLK, TOV, PF, PTS)[-train, ]
 trainY = cleanDF[train, ]$was_mvp
 testY = cleanDF[-train, ]$was_mvp
-
 ```
 
 ```{r knn2, include=FALSE}
@@ -290,8 +280,8 @@ knnTable1 = table(knnPred, testY)
 ```
 
 ```{r}
-accuracy
 knnTable1
+accuracy
 truePositive(knnTable1)
 falseNegative(knnTable1)
 f1Score(knnTable1)
@@ -306,8 +296,8 @@ knnTable2 = table(knnPred2, testY)
 ```
 
 ```{r}
-accuracy
 knnTable2
+accuracy
 truePositive(knnTable2)
 falseNegative(knnTable2)
 f1Score(knnTable2)
@@ -326,8 +316,8 @@ mcc(knnTable3)
 ```
 
 ```{r}
-accuracy
 knnTable3
+accuracy
 truePositive(knnTable3)
 falseNegative(knnTable3)
 f1Score(knnTable3)
@@ -339,21 +329,16 @@ mcc(knnTable3)
 knnPred4 = knn(trainX,testX,trainY,k=2)
 accuracy = mean(knnPred4 == testY)
 knnTable4 = table(knnPred4, testY)
-
 ```
 
 ```{r}
-accuracy
 knnTable4
+accuracy
 truePositive(knnTable4)
 falseNegative(knnTable4)
 f1Score(knnTable4)
 mcc(knnTable4)
 ```
-
-
-
-
 
 
 ### KNN fit on data split by year
@@ -364,72 +349,78 @@ testX = dfGT2000[,-47]
 trainY = dfLT2000$was_mvp
 testY = dfGT2000$was_mvp
 
-trainX
 
-knnPred=knn(trainX, testX, trainY, k=1)
-mean(knnPred == testY)
+knnPred = knn(trainX, testX, trainY, k=1)
+accuracy = mean(knnPred == testY)
 knnTable1 = table(knnPred, testY)
+
 knnTable1
+accuracy
 truePositive(knnTable1)
 falseNegative(knnTable1)
 f1Score(knnTable1)
 mcc(knnTable1)
 
+
 knnPred2 = knn(trainX,testX,trainY, k=3)
-mean(knnPred2 == testY)
+accuracy = mean(knnPred2 == testY)
 knnTable2 = table(knnPred2, testY)
+
 knnTable2
+accuracy
 truePositive(knnTable2)
 falseNegative(knnTable2)
 f1Score(knnTable2)
 mcc(knnTable2)
 
+
 knnPred3 = knn(trainX, testX, trainY, k=4)
 mean(knnPred3 == testY)
 knnTable3 = table(knnPred3, testY)
+
 knnTable3
+accuracy
 truePositive(knnTable3)
 falseNegative(knnTable3)
 f1Score(knnTable3)
 mcc(knnTable3)
 
+
 knnPred4 = knn(trainX,testX,trainY,k=2)
 mean(knnPred4 == testY)
 knnTable4 = table(knnPred4, testY)
+
 knnTable4
+accuracy
 truePositive(knnTable4)
 falseNegative(knnTable4)
 f1Score(knnTable4)
 mcc(knnTable4)
-
 ```
 
 We find that for knn, a k = 4 is the most effective model with an mcc score of
 $24\%$. That being said, none of these models are particularly effective.
 
-
 ### Random Forest
 
 ```{r forest, include=FALSE}
+treeSplit = initial_split(cleanDF, prop = .5)
+treeTrain = training(treeSplit)
+treeTest  = testing(treeSplit)
 
-treeSplit <- initial_split(cleanDF, prop = .5)
-treeTrain <- training(treeSplit)
-treeTest  <- testing(treeSplit)
+treeTrain$was_mvp = as.character(treeTrain$was_mvp)
+treeTrain$was_mvp = as.factor(treeTrain$was_mvp)
 
-treeTrain$was_mvp <- as.character(treeTrain$was_mvp)
-treeTrain$was_mvp <- as.factor(treeTrain$was_mvp)
-
-mvpForest <- randomForest(was_mvp ~ ., data = treeTrain, importance = TRUE)
+mvpForest = randomForest(was_mvp ~ ., data = treeTrain, importance = TRUE)
 mvpForest
 
 varImpPlot(mvpForest, sort=TRUE)
-predTest <- predict(mvpForest, treeTest, type = "class")
+predTest = predict(mvpForest, treeTest, type = "class")
 mvpForest$importance
 mvpForest$confusion
 accuracy = mean(predTest == treeTest$was_mvp)
 forestTable = table(predTest, treeTest$was_mvp)
 ```
-
 
 
 ```{r}
@@ -449,7 +440,6 @@ This model uses VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS.
 ```{r logistic2, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = cleanDF[train, ], family = binomial(link = "logit"))
 
-
 #summary(logFit)
 
 probLog2 = predict(logFit2, newdata = test, type = "response")
@@ -458,13 +448,11 @@ predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
 accuracy = mean(predLog2 == test$was_mvp)
 
 logTable = table(predLog2, test$was_mvp)
-
-
 ```
 
 ```{r}
-accuracy
 logTable
+accuracy
 truePositive(logTable)
 falseNegative(logTable)
 f1Score(logTable)
@@ -476,7 +464,6 @@ mcc(logTable)
 ```{r logistic3, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
 
-
 #summary(logFit)
 
 probLog2 = predict(logFit2, newdata = dfGT2000, type = "response")
@@ -485,12 +472,11 @@ predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
 accuracy = mean(predLog2 == dfGT2000$was_mvp)
 
 logTable = table(predLog2, dfGT2000$was_mvp)
-
 ```
 
 ```{r}
-accuracy
 logTable
+accuracy
 truePositive(logTable)
 falseNegative(logTable)
 f1Score(logTable)
@@ -505,7 +491,6 @@ This model uses features VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST +
 ```{r logistic4, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
 
-
 #summary(logFit)
 
 probLog2 = predict(logFit2, newdata = dfGT2000, type = "response")
@@ -514,13 +499,11 @@ predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
 accuracy = mean(predLog2 == dfGT2000$was_mvp)
 
 logTable = table(predLog2, dfGT2000$was_mvp)
-
-
 ```
 
 ```{r}
-accuracy
 logTable
+accuracy
 truePositive(logTable)
 falseNegative(logTable)
 f1Score(logTable)
