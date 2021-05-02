@@ -56,7 +56,7 @@ Before we can discuss the actual modeling of the problem, it is important to und
 
 The MCC produces a high score only if the prediction obtained good results in all of the four confusion matrix categories (true positives, false negatives, true negatives, and false positives), proportionally both to the size of positive elements and the size of negative elements in the dataset (Chicco, Gurman). 
 
-These metrics will be calculated using the following functions:
+These metrics will be calculated using the following functions where table is the confusion matrix:
 
 ```{r scoringFuncs, include = TRUE}
 truePositive <- function(table) {
@@ -219,9 +219,10 @@ We will now perform an LDA using leave one out cross validation.
 ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
 ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
 accuracy = mean(ldaFit$class ==  nonCorDF$was_mvp)
+
 ```
 
-```{r}
+```{r results1, message=FALSE}
 ldaTable
 accuracy
 truePositive(ldaTable)
@@ -230,30 +231,6 @@ f1Score(ldaTable)
 mcc(ldaTable) 
 ```
 
-### Logistical Regression
-```{r logistic, include=FALSE}
-logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial(link = "logit"))
-
-#summary(logFit)
-
-probLog = predict(logFit, newdata = testNonCor, type = "response")
-
-predLog = ifelse(probLog > 0.5, TRUE, FALSE)
-acuracy = mean(predLog == testNonCor$was_mvp)
-logTable = table(predLog, testNonCor$was_mvp)
-```
-
-```{r}
-logTable
-accuracy
-truePositive(logTable)
-falseNegative(logTable)
-f1Score(logTable)
-mcc(logTable)
-```
-
-
-For this model, the overall accuracy is very high at $99.28699\%$. The model correctly predicted the MVP $81.81818\%$ of the time. At the same time, the model predicted a non-MVP as the MVP $0.6601568\%$ of the time.
 
 
 ### KNN
@@ -341,67 +318,68 @@ mcc(knnTable4)
 ```
 
 
-### KNN fit on data split by year
-
 ```{r knn6, include=FALSE}
-trainX = dfLT2000[, -47]
-testX = dfGT2000[,-47]
-trainY = dfLT2000$was_mvp
-testY = dfGT2000$was_mvp
-
-
-knnPred = knn(trainX, testX, trainY, k=1)
-accuracy = mean(knnPred == testY)
-knnTable1 = table(knnPred, testY)
-
-knnTable1
-accuracy
-truePositive(knnTable1)
-falseNegative(knnTable1)
-f1Score(knnTable1)
-mcc(knnTable1)
-
-
-knnPred2 = knn(trainX,testX,trainY, k=3)
-accuracy = mean(knnPred2 == testY)
-knnTable2 = table(knnPred2, testY)
-
-knnTable2
-accuracy
-truePositive(knnTable2)
-falseNegative(knnTable2)
-f1Score(knnTable2)
-mcc(knnTable2)
-
-
-knnPred3 = knn(trainX, testX, trainY, k=4)
-mean(knnPred3 == testY)
-knnTable3 = table(knnPred3, testY)
-
-knnTable3
-accuracy
-truePositive(knnTable3)
-falseNegative(knnTable3)
-f1Score(knnTable3)
-mcc(knnTable3)
-
-
-knnPred4 = knn(trainX,testX,trainY,k=2)
-mean(knnPred4 == testY)
-knnTable4 = table(knnPred4, testY)
-
-knnTable4
-accuracy
-truePositive(knnTable4)
-falseNegative(knnTable4)
-f1Score(knnTable4)
-mcc(knnTable4)
+# trainX = dfLT2000[, -47]
+# testX = dfGT2000[,-47]
+# trainY = dfLT2000$was_mvp
+# testY = dfGT2000$was_mvp
+# 
+# 
+# knnPred = knn(trainX, testX, trainY, k=1)
+# accuracy = mean(knnPred == testY)
+# knnTable1 = table(knnPred, testY)
+# 
+# knnTable1
+# accuracy
+# truePositive(knnTable1)
+# falseNegative(knnTable1)
+# f1Score(knnTable1)
+# mcc(knnTable1)
+# 
+# 
+# knnPred2 = knn(trainX,testX,trainY, k=3)
+# accuracy = mean(knnPred2 == testY)
+# knnTable2 = table(knnPred2, testY)
+# 
+# knnTable2
+# accuracy
+# truePositive(knnTable2)
+# falseNegative(knnTable2)
+# f1Score(knnTable2)
+# mcc(knnTable2)
+# 
+# 
+# knnPred3 = knn(trainX, testX, trainY, k=4)
+# mean(knnPred3 == testY)
+# knnTable3 = table(knnPred3, testY)
+# 
+# knnTable3
+# accuracy
+# truePositive(knnTable3)
+# falseNegative(knnTable3)
+# f1Score(knnTable3)
+# mcc(knnTable3)
+# 
+# 
+# knnPred4 = knn(trainX,testX,trainY,k=2)
+# mean(knnPred4 == testY)
+# knnTable4 = table(knnPred4, testY)
+# 
+# knnTable4
+# accuracy
+# truePositive(knnTable4)
+# falseNegative(knnTable4)
+# f1Score(knnTable4)
+# mcc(knnTable4)
 ```
+
 
 We find that for knn, a k = 4 is the most effective model with an mcc score of
 $24\%$. That being said, none of these models are particularly effective.
 
 ### Random Forest
+
+Next, a random forest is fit to the data. This random forest serves two purposes. First, it will act as a sufficient model but it will also be used to select important features. 
 
 ```{r forest, include=FALSE}
 treeSplit = initial_split(cleanDF, prop = .5)
@@ -414,7 +392,6 @@ treeTrain$was_mvp = as.factor(treeTrain$was_mvp)
 mvpForest = randomForest(was_mvp ~ ., data = treeTrain, importance = TRUE)
 mvpForest
 
-varImpPlot(mvpForest, sort=TRUE)
 predTest = predict(mvpForest, treeTest, type = "class")
 mvpForest$importance
 mvpForest$confusion
@@ -424,6 +401,7 @@ forestTable = table(predTest, treeTest$was_mvp)
 
 
 ```{r}
+varImpPlot(mvpForest, sort=TRUE)
 forestTable
 accuracy
 truePositive(forestTable)
@@ -432,13 +410,42 @@ f1Score(forestTable)
 mcc(forestTable)
 ```
 
+In the plot above, we see some of the important features are the advanced statistics BPM, Win Shares and Value over replacement. We will use these and some of the other important features to fit more models. 
 
-### Logistical using features from Random Forest
+We now consider logistical regression models. 
+
+### Logistical Regression
+
+The first model will use all uncorrelated features.
+
+```{r logistic, include=FALSE}
+logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial)
+
+#summary(logFit)
+
+probLog = predict(logFit, newdata = testNonCor, type = "response")
+
+predLog = ifelse(probLog > 0.5, TRUE, FALSE)
+acuracy = mean(predLog == testNonCor$was_mvp)
+logTable = table(predLog, testNonCor$was_mvp)
+```
+
+```{r}
+logTable
+accuracy
+truePositive(logTable)
+falseNegative(logTable)
+f1Score(logTable)
+mcc(logTable)
+```
+
+
+Now, we will begin using features that were indicated as important by the random forest.
 
 This model uses VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS.
 
 ```{r logistic2, include=FALSE}
-logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = cleanDF[train, ], family = binomial(link = "logit"))
+logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = cleanDF[train, ], family = binomial)
 
 #summary(logFit)
 
@@ -460,9 +467,10 @@ mcc(logTable)
 ```
 
 
-### Logistic using features from Random Forest and data split by year
+This model uses VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS and is fit on the data split by year.
+
 ```{r logistic3, include=FALSE}
-logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
+logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
 
 #summary(logFit)
 
@@ -483,13 +491,10 @@ f1Score(logTable)
 mcc(logTable)
 ```
 
-
-###  Logistic using interaction terms
-
-This model uses features VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS.
+This model will be making use of interaction between some of the features and uses VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS.
 
 ```{r logistic4, include=FALSE}
-logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial(link = "logit"))
+logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
 
 #summary(logFit)
 
@@ -514,9 +519,11 @@ mcc(logTable)
 
 # Conclusion
 
-The general purpose of this research was to compare different classification machine learning algorithms that would predict the NBA's MVP. This was done using data scraped from basketball-reference.com. Through the course of building and testing various classification models, we found a few models that somewhat accurately predicted MVPs. Logistical regression using the features found by random forests as well as including interaction terms was our best model with an MCC of 0.54. The question we were asking proved to be more complex than originally intended though. 
+This research compared different classification machine learning algorithms with the goal to predict the NBA MVP. This was done using data scraped from basketball-reference.com. Through the course of building and testing various classification models, we offer models that can accurately predict non-MVP players, and predict MVP winners moderately well. 
 
-The nature of an MVP is only one player per season gets chosen. This introduced many issues as there is a fairly limited number of MVPs. Being such a rare event led to all our models having incredibly high accuracy, but low true positive rates, which is what we're specifically interested in. We tried various data splitting methods, but none were particularly successful. Future research might want to focus on models that better deal with rare events.
+The nature of the MVP award means That only one player per season gets chosen. This introduces issues as there is an inherently limited number of MVP players. Being such a rare event led to all models having high accuracy, but low true to middle true positive rates. Various data splitting methods and multiple models were explored, however none were particularly successful. Logistical regression using the features found by random forests as well as including interaction terms offered the best model with an MCC of 0.54.
+
+It is the speculation of the authors that superior models could be found if the data contained features involving team success (games won by the team) and popularity of the players (twitter followers). Another change that could yield more accurate results would be to, instead of classifying players as MVP or not, consider using regression to predict the number of MVP votes that each player received. These speculations serve as recommendations for any future research. 
 
 # References
 
