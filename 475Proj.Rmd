@@ -514,8 +514,12 @@ mcc(logTable)
 
 # Conclusion
 
+The general purpose of this research was to compare different classification machine learning algorithms that would predict the NBA's MVP. This was done using data scraped from basketball-reference.com. Through the course of building and testing various classification models, we found a few models that somewhat accurately predicted MVPs. Logistical regression using the features found by random forests as well as including interaction terms was our best model with an MCC of 0.54. The question we were asking proved to be more complex than originally intended though. 
+
+The nature of an MVP is only one player per season gets chosen. This introduced many issues as there is a fairly limited number of MVPs. Being such a rare event led to all our models having incredibly high accuracy, but low true positive rates, which is what we're specifically interested in. We tried various data splitting methods, but none were particularly successful. Future research might want to focus on models that better deal with rare events.
+
 # References
 
 Chicco, D., Jurman, G. The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation. BMC Genomics 21, 6 (2020). https://doi.org/10.1186/s12864-019-6413-7
 
-“Sklearn.metrics.f1_score¶.” Scikit, scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html. 
+“Sklearn.metrics.f1_score.” Scikit, scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html. 
