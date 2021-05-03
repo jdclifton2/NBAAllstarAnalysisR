@@ -252,10 +252,10 @@ trainY = cleanDF[train, ]$was_mvp
 testY = cleanDF[-train, ]$was_mvp
 ```
 
-```{r knn2, include=FALSE}
-knnPred=knn(trainX, testX, trainY, k=1)
-accuracy = mean(knnPred == testY)
-knnTable1 = table(knnPred, testY)
+```{r knn1, include=FALSE}
+knnPred1 = knn(trainX, testX, trainY, k=1)
+accuracy = mean(knnPred1 == testY)
+knnTable1 = table(knnPred1, testY)
 ```
 
 ```{r}
@@ -267,9 +267,8 @@ f1Score(knnTable1)
 mcc(knnTable1)
 ```
 
-
-```{r knn3, include=FALSE}
-knnPred2 = knn(trainX,testX,trainY, k=3)
+```{r knn2, include=FALSE}
+knnPred2 = knn(trainX, testX, trainY, k=2)
 accuracy = mean(knnPred2 == testY)
 knnTable2 = table(knnPred2, testY)
 ```
@@ -284,14 +283,10 @@ mcc(knnTable2)
 ```
 
 
-```{r knn4, include=FALSE}
-knnPred3 = knn(trainX, testX, trainY, k=4)
+```{r knn3, include=FALSE}
+knnPred3 = knn(trainX, testX, trainY, k=3)
 accuracy = mean(knnPred3 == testY)
 knnTable3 = table(knnPred3, testY)
-truePositive(knnTable3)
-falseNegative(knnTable3)
-f1Score(knnTable3)
-mcc(knnTable3)
 ```
 
 ```{r}
@@ -304,8 +299,8 @@ mcc(knnTable3)
 ```
 
 
-```{r knn5, include=FALSE}
-knnPred4 = knn(trainX,testX,trainY,k=2)
+```{r knn4, include=FALSE}
+knnPred4 = knn(trainX, testX, trainY, k=4)
 accuracy = mean(knnPred4 == testY)
 knnTable4 = table(knnPred4, testY)
 ```
@@ -375,9 +370,8 @@ mcc(knnTable4)
 # mcc(knnTable4)
 ```
 
-
-We find that for knn, a k = 4 is the most effective model with an mcc score of
-$24\%$. That being said, none of these models are particularly effective.
+We find that for knn, a k = 2 is the most effective model with an mcc score of
+$32\%$. That being said, none of these models are particularly effective.
 
 ### Random Forest
 
