@@ -193,8 +193,8 @@ falseNegative(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable)
 ```
+The first model had many high false positives. The low true positive rate and MCC reflects that.
 
-This model will be fit on years prior to 2000 and tested on data from years greater than 2000.
 ```{r lda2, include=FALSE}
 ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
@@ -204,6 +204,7 @@ accuracy = mean(ldaPred$class == dfGT2000$was_mvp)
 
 #### Second LDA Results
 
+This model was fit on years prior to 2000 and tested on data from years greater than 2000.
 ```{r}
 ldaTable
 accuracy
@@ -212,9 +213,10 @@ falseNegative(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable)
 ```
+The second model performed marginally worse. The new training and testing set did improve the false negatives, however, the true positive and MCC were slightly lowered.
 
 ### LOOCV LDA
-We will now perform an LDA using leave one out cross validation. 
+We will now perform an LDA using leave one out cross validation on the original training and testing set. 
 ```{r ldaloo, include=FALSE}
 ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
 ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
@@ -230,11 +232,11 @@ falseNegative(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable) 
 ```
-
+Leave one out cross validation further worsened performance.
 
 
 ### KNN
-
+We will now perform KNN using the randomly split training and testing sets.
 ```{r knn, include=FALSE}
 names(cleanDF)
 trainX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
