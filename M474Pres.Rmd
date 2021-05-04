@@ -1,0 +1,189 @@
+---
+title: "Predicting the NBA MVP"
+author: "Mohammed Bukhattla, Justin Clifton, Maxwell Pitney, Graham Swain"
+date: "5/3/2021"
+output:
+  beamer_presentation: default
+  ioslides_presentation: default
+theme: "Warsaw"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r libraries, include=FALSE}
+library(readr)
+library(tibble)
+library(ggplot2)
+#library(GGally)
+library(dplyr)
+library(corrplot)
+library(caret)
+library(class)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(rsample)
+
+
+
+set.seed(23)
+DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
+nba_df = na.omit(DF)
+names(nba_df)
+nba_df$was_mvp = as.logical(nba_df$was_mvp)
+nbaTib = as_tibble(nba_df)
+cleanDF = dplyr::select(nbaTib, -c(Pos, Tm, Name, Year, is_allstar))
+attach(cleanDF)
+names(nbaTib)
+```
+
+
+```{r scoringFuncBehind, include = TRUE}
+truePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(tp/(tp + fn))
+}
+
+falseNegative <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fn/(tp + fn))
+}
+
+f1Score <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(2*tp/(2 * tp + fp + fn))
+}
+
+mcc <- function(table) {
+  tp = as.double(table[2,2])
+  tn = as.double(table[1,1])
+  fp = as.double(table[1,2])
+  fn = as.double(table[2,1])
+  divisor = sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+  return(((tp * tn) - (fp * fn))/divisor)
+}
+
+
+```
+
+### Introduction
+
+- The Most Valuable Player award is given out ever year. 
+- There have been 65 different players who have won the NBA MVP.
+
+
+## MVP Histogram
+
+```{r mvphist2, echo=FALSE}
+ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
+    geom_bar() +
+    scale_y_continuous(breaks=c(4,6,8,10)) +
+    labs(title="NBA MVPs by Position (1983 - 2017)",
+        x ="Position", y = "frequency")
+```
+
+
+## Can we predict the MVP?
+
+- Using player season statistics, can we predict who will win the MVP award?
+
+
+## Data Source and Variable Description
+
+- Season statistics include points, assists, rebounds, three pointers, as well as advanced statistics like Value Over Replacement and Box Plus/Minus.
+- What do MVPs have in common?
+
+
+## FGA vs PTS Scatterplot
+
+```{r scatter, echo=FALSE}
+ggplot(data = nbaTib) +
+  geom_point(mapping = aes(x = FGA, y = PTS, color = was_mvp, shape=was_mvp)) +labs(title="FGA vs PTS", x ="Field Goals Attempted", y = "Points Scored")
+```
+
+## Our MVPs
+
+```{r mvphist3, echo=FALSE}
+ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
+    geom_bar() +
+    scale_y_continuous(breaks=c(4,6,8,10)) +
+    labs(title="NBA MVPS by Position (1983 - 2017)",
+        x ="Position", y = "frequency")
+```
+
+
+## Methods
+
+- How will model accuracy be found?
+- How will the results be validated?
+
+## Scoring Models
+
+```{r scoringFuncs, echo = TRUE}
+truePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(tp/(tp + fn))
+}
+
+falseNegative <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fn/(tp + fn))
+}
+
+f1Score <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(2*tp/(2 * tp + fp + fn))
+}
+
+mcc <- function(table) {
+  tp = as.double(table[2,2])
+  tn = as.double(table[1,1])
+  fp = as.double(table[1,2])
+  fn = as.double(table[2,1])
+  divisor = sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+  return(((tp * tn) - (fp * fn))/divisor)
+}
+
+
+```
+
+
+
+
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+
+
+

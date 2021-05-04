@@ -75,6 +75,14 @@ falseNegative <- function(table) {
   return(fn/(tp + fn))
 }
 
+falsePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fp/(fp + tn))
+}
+
 f1Score <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -190,6 +198,7 @@ ldaTable
 accuracy
 truePositive(ldaTable)
 falseNegative(ldaTable)
+falsePositive(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable)
 ```
@@ -210,6 +219,7 @@ ldaTable
 accuracy
 truePositive(ldaTable)
 falseNegative(ldaTable)
+falsePositive(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable)
 ```
@@ -221,7 +231,6 @@ We will now perform an LDA using leave one out cross validation on the original 
 ldaFit = lda(was_mvp~., data = nonCorDF, CV = TRUE)
 ldaTable = table(ldaFit$class, nonCorDF$was_mvp)
 accuracy = mean(ldaFit$class ==  nonCorDF$was_mvp)
-
 ```
 
 ```{r results1, message=FALSE}
@@ -229,6 +238,7 @@ ldaTable
 accuracy
 truePositive(ldaTable)
 falseNegative(ldaTable)
+falsePositive(ldaTable)
 f1Score(ldaTable)
 mcc(ldaTable) 
 ```
@@ -263,6 +273,7 @@ knnTable1
 accuracy
 truePositive(knnTable1)
 falseNegative(knnTable1)
+falsePositive(knnTable1)
 f1Score(knnTable1)
 mcc(knnTable1)
 ```
@@ -278,6 +289,7 @@ knnTable2
 accuracy
 truePositive(knnTable2)
 falseNegative(knnTable2)
+falsePositive(knnTable2)
 f1Score(knnTable2)
 mcc(knnTable2)
 ```
@@ -294,6 +306,7 @@ knnTable3
 accuracy
 truePositive(knnTable3)
 falseNegative(knnTable3)
+falsePositive(knnTable3)
 f1Score(knnTable3)
 mcc(knnTable3)
 ```
@@ -310,6 +323,7 @@ knnTable4
 accuracy
 truePositive(knnTable4)
 falseNegative(knnTable4)
+falsePositive(knnTable4)
 f1Score(knnTable4)
 mcc(knnTable4)
 ```
@@ -402,6 +416,7 @@ forestTable
 accuracy
 truePositive(forestTable)
 falseNegative(forestTable)
+falsePositive(forestTable)
 f1Score(forestTable)
 mcc(forestTable)
 ```
@@ -431,6 +446,7 @@ logTable
 accuracy
 truePositive(logTable)
 falseNegative(logTable)
+falsePositive(logTable)
 f1Score(logTable)
 mcc(logTable)
 ```
@@ -458,6 +474,7 @@ logTable
 accuracy
 truePositive(logTable)
 falseNegative(logTable)
+falsePositive(logTable)
 f1Score(logTable)
 mcc(logTable)
 ```
@@ -483,6 +500,7 @@ logTable
 accuracy
 truePositive(logTable)
 falseNegative(logTable)
+falsePositive(logTable)
 f1Score(logTable)
 mcc(logTable)
 ```
@@ -507,6 +525,7 @@ logTable
 accuracy
 truePositive(logTable)
 falseNegative(logTable)
+falsePositive(logTable)
 f1Score(logTable)
 mcc(logTable)
 ```
