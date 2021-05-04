@@ -541,11 +541,6 @@ advanced2020 = as_tibble(read.csv("advanced.csv", header = TRUE))
 nbaDf2020 = dplyr::inner_join(df2020, advanced2020)
 ```
 
-# Third Logistic 
-
-- This model will be making use of interactions.
-- $VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS$.
-
 # Who does the model predict for this season?
 - Predict on data from 2020-2021 NBA season.
 
