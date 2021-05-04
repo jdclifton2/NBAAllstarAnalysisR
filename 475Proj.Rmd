@@ -38,6 +38,10 @@ library(rsample)
 
 
 set.seed(23)
+df2020 = as_tibble(read.csv("2020stats.csv", header = TRUE))
+advanced2020 = as_tibble(read.csv("advanced.csv", header = TRUE))
+nbaDf2020 = dplyr::inner_join(df2020, advanced2020)
+names(nbaDf2020)
 DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
 nba_df = na.omit(DF)
 names(nba_df)
@@ -439,6 +443,7 @@ probLog = predict(logFit, newdata = testNonCor, type = "response")
 predLog = ifelse(probLog > 0.5, TRUE, FALSE)
 acuracy = mean(predLog == testNonCor$was_mvp)
 logTable = table(predLog, testNonCor$was_mvp)
+
 ```
 
 ```{r}
@@ -514,7 +519,7 @@ logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST +
 
 probLog2 = predict(logFit2, newdata = dfGT2000, type = "response")
 
-predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
+predLog2 = ifelse(probLog2 > 0.8, TRUE, FALSE)
 accuracy = mean(predLog2 == dfGT2000$was_mvp)
 
 logTable = table(predLog2, dfGT2000$was_mvp)
@@ -531,12 +536,11 @@ mcc(logTable)
 ```
 
 
-
 # Conclusion
 
 This research compared different classification machine learning algorithms with the goal to predict the NBA MVP. This was done using data scraped from basketball-reference.com. Through the course of building and testing various classification models, we offer models that can accurately predict non-MVP players, and predict MVP winners moderately well. 
 
-The nature of the MVP award means That only one player per season gets chosen. This introduces issues as there is an inherently limited number of MVP players. Being such a rare event led to all models having high accuracy, but low true to middle true positive rates. Various data splitting methods and multiple models were explored, however none were particularly successful. Logistical regression using the features found by random forests as well as including interaction terms offered the best model with an MCC of 0.54.
+The nature of the MVP award means That only one player per season gets chosen. This introduces issues as there is an inherently limited number of MVP players. Being such a rare event led to all models having high accuracy, but low true to middle true positive rates. Various data splitting methods and multiple models were explored, however none were particularly successful. Logistical regression using the features found by random forests as well as including interaction terms offered the best model with an MCC of 0.60.
 
 It is the speculation of the authors that superior models could be found if the data contained features involving team success (games won by the team) and popularity of the players (twitter followers). Another change that could yield more accurate results would be to, instead of classifying players as MVP or not, consider using regression to predict the number of MVP votes that each player received. These speculations serve as recommendations for any future research. 
 
