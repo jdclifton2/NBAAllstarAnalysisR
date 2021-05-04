@@ -100,7 +100,23 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 - Using player season statistics, can we predict who will win the MVP award?
 
 
-## Data Source and Variable Description
+## Data Source 
+
+ - We will be considering data about player statistics tracked over the course of a season. 
+ - Our data is a combination of two other datasets.
+ - The first is a dataset of NBA season statistics from the years 1950-2017 scraped from www.basketball-reference.com.
+ - MVP information was scraped from basketball-reference using the beautifulSoup python package. 
+ - These two datasets were then combined.
+
+
+
+## Variable Description
+```{r, echo=TRUE}
+names(nbaTib)
+```
+
+
+## Variable Description
 
 - Season statistics include points, assists, rebounds, three pointers, as well as advanced statistics like Value Over Replacement and Box Plus/Minus.
 - What do MVPs have in common?
@@ -131,6 +147,8 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 
 ## Scoring Models
 
+- A true positive occurs when a player was predicted as the MVP, and actually won the MVP. The true positive rate (sensitivity) will be found using this function. 
+
 ```{r scoringFuncs, echo = TRUE}
 truePositive <- function(table) {
   tp = table[2,2]
@@ -139,7 +157,14 @@ truePositive <- function(table) {
   fn = table[2,1]
   return(tp/(tp + fn))
 }
+```
 
+
+## Scoring Models
+
+- A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The false negative rate (miss rate)  will be found using this function. 
+
+```{r scoringFuncs2, echo = TRUE}
 falseNegative <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -147,7 +172,14 @@ falseNegative <- function(table) {
   fn = table[2,1]
   return(fn/(tp + fn))
 }
+```
 
+
+## F1 score
+
+- The F1 score can be interpreted as a weighted average of the precision and recall, where an F1 score reaches its best value at 1 and worst score at 0. The relative contribution of precision and recall to the F1 score are equal (scikit).
+
+```{r f1, echo = TRUE}
 f1Score <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -155,34 +187,34 @@ f1Score <- function(table) {
   fn = table[2,1]
   return(2*tp/(2 * tp + fp + fn))
 }
+```
 
+## Matthew's Correlation Coefficient
+
+- The MCC produces a high score only if the prediction obtained good results in all of the four confusion matrix categories (true positives, false negatives, true negatives, and false positives), proportionally both to the size of positive elements and the size of negative elements in the dataset (Chicco, Gurman). 
+
+```{r mcc, echo = TRUE}
 mcc <- function(table) {
   tp = as.double(table[2,2])
   tn = as.double(table[1,1])
   fp = as.double(table[1,2])
   fn = as.double(table[2,1])
-  divisor = sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+  divisor = sqrt((tp + fp) * (tp + fn) * 
+                   (tn + fp) * (tn + fn))
   return(((tp * tn) - (fp * fn))/divisor)
 }
-
-
 ```
 
 
 
 
 
-## Slide with R Output
 
-```{r cars, echo = TRUE}
-summary(cars)
-```
 
-## Slide with Plot
 
-```{r pressure}
-plot(pressure)
-```
+
+
+
 
 
 
