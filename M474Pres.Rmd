@@ -535,7 +535,7 @@ mcc(logTable)
 ```
 
 
-```{r}
+```{r, include=FALSE}
 df2020 = as_tibble(read.csv("2020stats.csv", header = TRUE))
 advanced2020 = as_tibble(read.csv("advanced.csv", header = TRUE))
 nbaDf2020 = dplyr::inner_join(df2020, advanced2020)
