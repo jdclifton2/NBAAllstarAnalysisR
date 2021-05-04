@@ -2,8 +2,13 @@
 title: "Predicting The NBA MVP"
 author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
 date: "05/04/2021"
-abstract: "The NBA's most valuable player award is given to one player every NBA season. There have been 65 different players who have won this award. In this paper, we offer several models that attempt to predict the NBA MVP. These models will be using individual player data tracked over the course of a season. "
-output: html_document
+output:
+  word_document: default
+  html_document: default
+abstract: 'The NBA''s most valuable player award is given to one player every NBA
+  season. There have been 65 different players who have won this award. In this paper,
+  we offer several models that attempt to predict the NBA MVP. These models will be
+  using individual player data tracked over the course of a season. '
 ---
 
 # Introduction
