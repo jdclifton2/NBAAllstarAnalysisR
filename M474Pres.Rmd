@@ -306,6 +306,13 @@ f1Score(ldaTable)
 mcc(ldaTable)
 ```
 
+```{r lda2, include=FALSE}
+ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
+ldaPred = predict(ldaFit, nonCorDfGT2000)
+ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
+accuracy = mean(ldaPred$class == dfGT2000$was_mvp)
+```
+
 # Second LDA Results
 
 - Fit on years prior to 2000, tested on data from years greater than 2000.
