@@ -38,7 +38,7 @@ library(rsample)
 
 
 set.seed(23)
-names(nbaDf2020)
+#names(nbaDf2020)
 DF = read.csv("NBA_Stats_MVP.csv", header = TRUE)
 nba_df = na.omit(DF)
 names(nba_df)
