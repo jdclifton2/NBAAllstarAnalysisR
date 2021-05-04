@@ -534,6 +534,40 @@ f1Score(logTable)
 mcc(logTable)
 ```
 
+
+```{r}
+df2020 = as_tibble(read.csv("2020stats.csv", header = TRUE))
+advanced2020 = as_tibble(read.csv("advanced.csv", header = TRUE))
+nbaDf2020 = dplyr::inner_join(df2020, advanced2020)
+```
+
+# Third Logistic 
+
+- This model will be making use of interactions.
+- $VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS$.
+
+# Who does the model predict for this season?
+- Predict on data from 2020-2021 NBA season.
+
+```{r logistic5, include=FALSE}
+logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
+
+probLog2 = predict(logFit2, newdata = nbaDf2020, type = "response")
+
+predLog2 = ifelse(probLog2 > 0.9, TRUE, FALSE)
+```
+
+```{r, include=FALSE}
+probLog2
+predLog2[predLog2 == TRUE]
+probLog2[probLog2 > .1]
+slice(nbaDf2020, (105:105))
+slice(nbaDf2020, (185:185))
+```
+
+# 2021 NBA MVP
+![Nikola Jokić with 99% probability (Singer)](jokic.jpg)
+
 # Conclusion
 
 - Models accurately predict non-MVP players, and predict MVP winners moderately well.
@@ -549,7 +583,11 @@ mcc(logTable)
 
 Chicco, D., Jurman, G. The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation. BMC Genomics 21, 6 (2020). https://doi.org/10.1186/s12864-019-6413-7
 
+Singer, Mike. “Nuggets' Nikola Jokic Stamps Signature Moment in Wild Win over Memphis: ‘That's Why You're the MVP.’” The Denver Post, The Denver Post, 20 Apr. 2021, www.denverpost.com/2021/04/20/nuggets-nikola-jokic-signature-moment-win-memphis/. 
+
 “Sklearn.metrics.f1_score.” Scikit, scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html. 
+
+
 
 
 
