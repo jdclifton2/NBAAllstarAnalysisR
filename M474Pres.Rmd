@@ -78,13 +78,13 @@ mcc <- function(table) {
 
 ```
 
-### Introduction
+# Introduction
 
 - The Most Valuable Player award is given out ever year. 
 - There have been 65 different players who have won the NBA MVP.
 
 
-## MVP Histogram
+# MVP Histogram
 
 ```{r mvphist2, echo=FALSE}
 ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
@@ -95,12 +95,13 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 ```
 
 
-## Can we predict the MVP?
+# Can we predict the MVP?
 
 - Using player season statistics, can we predict who will win the MVP award?
+- We will attempt to classify players as MVP or non MVP.
 
 
-## Data Source 
+# Data Source 
 
  - We will be considering data about player statistics tracked over the course of a season. 
  - Our data is a combination of two other datasets.
@@ -110,7 +111,7 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 
 
 
-## Variable Description
+# Variable Description
 ```{r, echo=TRUE}
 names(nbaTib)
 ```
@@ -122,14 +123,14 @@ names(nbaTib)
 - What do MVPs have in common?
 
 
-## FGA vs PTS Scatterplot
+# FGA vs PTS Scatterplot
 
 ```{r scatter, echo=FALSE}
 ggplot(data = nbaTib) +
   geom_point(mapping = aes(x = FGA, y = PTS, color = was_mvp, shape=was_mvp)) +labs(title="FGA vs PTS", x ="Field Goals Attempted", y = "Points Scored")
 ```
 
-## Our MVPs
+# Our MVPs
 
 ```{r mvphist3, echo=FALSE}
 ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
@@ -140,12 +141,12 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 ```
 
 
-## Methods
+# Methods
 
 - How will model accuracy be found?
 - How will the results be validated?
 
-## Scoring Models
+# Scoring Models
 
 - A true positive occurs when a player was predicted as the MVP, and actually won the MVP. The true positive rate (sensitivity) will be found using this function. 
 
@@ -160,7 +161,7 @@ truePositive <- function(table) {
 ```
 
 
-## Scoring Models
+# Scoring Models
 
 - A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The false negative rate (miss rate)  will be found using this function. 
 
@@ -175,7 +176,21 @@ falseNegative <- function(table) {
 ```
 
 
-## F1 score
+A false positive occurs when a player was predicted as the MVP but did not win the MVP.
+
+```{r}
+falsePositive <- function(table) {
+  tp = table[2,2]
+  tn = table[1,1]
+  fp = table[1,2]
+  fn = table[2,1]
+  return(fp/(fp + tn))
+}
+```
+
+
+
+# F1 score
 
 - The F1 score can be interpreted as a weighted average of the precision and recall, where an F1 score reaches its best value at 1 and worst score at 0. The relative contribution of precision and recall to the F1 score are equal (scikit).
 
@@ -189,7 +204,7 @@ f1Score <- function(table) {
 }
 ```
 
-## Matthew's Correlation Coefficient
+# Matthew's Correlation Coefficient
 
 - The MCC produces a high score only if the prediction obtained good results in all of the four confusion matrix categories (true positives, false negatives, true negatives, and false positives), proportionally both to the size of positive elements and the size of negative elements in the dataset (Chicco, Gurman). 
 
@@ -206,13 +221,335 @@ mcc <- function(table) {
 ```
 
 
+# Validating the Data
+
+- Initially, the data was split randomly.
+- A very small amount of players have won the MVP award.
+- In some cases training set given by years prior to 2000 and testing set given by years later than 2000. 
+
+# Modeling and Results
+Multiple models were fit, including: 
+
+- LDA
+- KNN
+- Logistic Regression
+- Random Forest
+
+# LDA 
+
+- Recall an assumption of LDA is that none of the features are heavily correlated.
+
+- Consider a correlation matrix.
+
+# Correlation Matrix
+
+```{r datasplitting, include=FALSE}
+train = sample(dim(cleanDF)[1], dim(cleanDF)[1]/2)
+test = cleanDF[-train, ]
+dfLT2000 = dplyr::filter(nbaTib, Year <= 2000)
+dfLT2000 = dplyr::select(dfLT2000, -c(Pos, Tm, Name, Year, is_allstar))
+dfGT2000 = dplyr::filter(nbaTib, Year > 2000)
+dfGT2000 = dplyr::select(dfGT2000, -c(Pos, Tm, Name, Year, is_allstar) )
+```
+
+```{r originalCorr, echo=FALSE}
+corMat = cor(cleanDF)
+corrplot(corMat, tl.cex=0.5,method="shade")
+```
+
+```{r dropCorr, include=FALSE}
+names = findCorrelation(corMat, cutoff = .7, verbose = TRUE, names = TRUE)
+
+nonCorDF = dplyr::select(cleanDF, -all_of(names))
+```
 
 
+# New Correlation Matrix
+After removing features with correlation greater than |.7|.
+
+```{r newCorr, echo= FALSE}
+corMat2 = cor(nonCorDF)
+
+corrplot(corMat2, tl.cex=0.5,method="shade")
+```
+
+# First LDA
+
+- Fit on randomly split data.
+- Using all non-correlated features.
+
+```{r lda, include=FALSE}
+nonCorDfLT2000 = dplyr::select(dfLT2000, -all_of(names))
+nonCorDfGT2000 = dplyr::select(dfGT2000, -all_of(names))
+
+library(MASS)
+trainNonCor = sample(dim(nonCorDF)[1], dim(nonCorDF)[1]/2)
+testNonCor = nonCorDF[-trainNonCor, ]
+ldaFit = lda(was_mvp~., data = nonCorDF, subset=train)
+ldaPred = predict(ldaFit, testNonCor)
+ldaTable = table(ldaPred$class,testNonCor$was_mvp)
+accuracy = mean(ldaPred$class == testNonCor$was_mvp)
+```
+
+# First LDA Confusion Matrix & Accuracy
+```{r echo=TRUE}
+ldaTable
+accuracy
+```
+
+# First LDA Results
+```{r echo=TRUE}
+truePositive(ldaTable)
+falseNegative(ldaTable)
+falsePositive(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
+```
+
+# Second LDA Results
+
+- Fit on years prior to 2000, tested on data from years greater than 2000.
+- All non-correlated features used.
+
+# Second LDA Confusion Matrix and Accuracy
+```{r echo=TRUE}
+ldaTable
+accuracy
+```
+
+# Second LDA Results 
+```{r echo=TRUE}
+truePositive(ldaTable)
+falseNegative(ldaTable)
+falsePositive(ldaTable)
+f1Score(ldaTable)
+mcc(ldaTable)
+```
 
 
+# KNN
+
+- Fit on randomly split training and testing sets.
+
+```{r knn, include=FALSE}
+names(cleanDF)
+trainX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
+               AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
+               BPM, VORP, FG, FGA, FG., X3P, X3PA, X3P., X2P, X2PA, X2P.,
+               eFG., FT, FTA, FT., ORB, DRB, TRB, AST, STL, BLK, TOV, PF, PTS
+               )[train, ]
+testX = cbind(Age, G, GS, MP, PER, TS., X3PAr, FTr, ORB., DRB., TRB.,
+               AST., STL., BLK., TOV., USG., OWS, DWS, WS, WS.48, OBPM, DBPM,
+               BPM, VORP, FG, FGA, FG., X3P, X3PA, X3P., X2P, X2PA, X2P.,
+               eFG., FT, FTA, FT., ORB, DRB, TRB, AST, STL, BLK, TOV, PF, PTS)[-train, ]
+trainY = cleanDF[train, ]$was_mvp
+testY = cleanDF[-train, ]$was_mvp
+```
+
+```{r knn1, include=FALSE}
+knnPred1 = knn(trainX, testX, trainY, k=1)
+accuracy = mean(knnPred1 == testY)
+knnTable1 = table(knnPred1, testY)
+```
+
+# First KNN Confusion Matrix and Accuracy
+```{r echo=TRUE}
+knnTable1
+accuracy
+```
+
+# First KNN Results
+```{r echo=TRUE}
+truePositive(knnTable1)
+falseNegative(knnTable1)
+falsePositive(knnTable1)
+f1Score(knnTable1)
+mcc(knnTable1)
+```
 
 
+```{r knn2, include=FALSE}
+knnPred2 = knn(trainX, testX, trainY, k=2)
+accuracy = mean(knnPred2 == testY)
+knnTable2 = table(knnPred2, testY)
+```
 
+# Second KNN Confusion Matrix and Accuracy
+```{r echo=TRUE}
+knnTable2
+accuracy
+
+```
+
+# Second KNN Results
+```{r echo=TRUE}
+truePositive(knnTable2)
+falseNegative(knnTable2)
+falsePositive(knnTable2)
+f1Score(knnTable2)
+mcc(knnTable2)
+```
+
+# Random Forest
+
+- An ensemble learning method.
+- Fits multiple decision tree classifiers on various sub-samples of the dataset and uses bootstrapping to improve accuracy and control over-fitting.
+- Used as a model and for feature selection.
+
+
+```{r forest, include=FALSE}
+treeSplit = initial_split(cleanDF, prop = .5)
+treeTrain = training(treeSplit)
+treeTest  = testing(treeSplit)
+
+treeTrain$was_mvp = as.character(treeTrain$was_mvp)
+treeTrain$was_mvp = as.factor(treeTrain$was_mvp)
+
+mvpForest = randomForest(was_mvp ~ ., data = treeTrain, importance = TRUE)
+mvpForest
+
+predTest = predict(mvpForest, treeTest, type = "class")
+mvpForest$importance
+mvpForest$confusion
+accuracy = mean(predTest == treeTest$was_mvp)
+forestTable = table(predTest, treeTest$was_mvp)
+```
+
+# Random Forest Confusion Matrix and Accuracy
+
+```{r}
+forestTable
+accuracy
+```
+
+# Random Forest Results
+```{r}
+truePositive(forestTable)
+falseNegative(forestTable)
+falsePositive(forestTable)
+f1Score(forestTable)
+mcc(forestTable)
+```
+
+# Feature Importance
+```{r}
+varImpPlot(mvpForest, sort=TRUE)
+```
+
+# First Logistic
+- Uses all non-correlated features.
+- Randomly split data.
+
+```{r logistic, include=FALSE}
+logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial)
+
+#summary(logFit)
+
+probLog = predict(logFit, newdata = testNonCor, type = "response")
+
+predLog = ifelse(probLog > 0.5, TRUE, FALSE)
+acuracy = mean(predLog == testNonCor$was_mvp)
+logTable = table(predLog, testNonCor$was_mvp)
+
+```
+
+# First Logistic Confusion Matrix and Accuracy
+```{r echo=TRUE}
+logTable
+accuracy
+```
+
+# First LDA Results
+```{r echo=TRUE}
+truePositive(logTable)
+falseNegative(logTable)
+falsePositive(logTable)
+f1Score(logTable)
+mcc(logTable)
+```
+
+# Second Logistic
+- Using features indicated as important by random forest.
+- Fit on data split by year.
+- $VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS$.
+
+```{r logistic3, include=FALSE}
+logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
+
+#summary(logFit)
+
+probLog2 = predict(logFit2, newdata = dfGT2000, type = "response")
+
+predLog2 = ifelse(probLog2 > 0.5, TRUE, FALSE)
+accuracy = mean(predLog2 == dfGT2000$was_mvp)
+
+logTable = table(predLog2, dfGT2000$was_mvp)
+```
+
+
+# Second Logistic Confusion Matrix and Accuracy
+```{r echo=TRUE}
+logTable
+accuracy
+```
+
+```{r echo=TRUE}
+truePositive(logTable)
+falseNegative(logTable)
+falsePositive(logTable)
+f1Score(logTable)
+mcc(logTable)
+```
+
+# Third Logistic 
+
+- This model will be making use of interactions.
+- $VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS$.
+
+```{r logistic4, include=FALSE}
+logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
+
+#summary(logFit)
+
+probLog2 = predict(logFit2, newdata = dfGT2000, type = "response")
+
+predLog2 = ifelse(probLog2 > 0.8, TRUE, FALSE)
+accuracy = mean(predLog2 == dfGT2000$was_mvp)
+
+logTable = table(predLog2, dfGT2000$was_mvp)
+```
+
+# Third Logistic Confusion Matrix and Accuracy
+```{r echo=TRUE}
+logTable
+accuracy
+```
+
+# Third Logistic Results
+```{r echo=TRUE}
+truePositive(logTable)
+falseNegative(logTable)
+falsePositive(logTable)
+f1Score(logTable)
+mcc(logTable)
+```
+
+# Conclusion
+
+- Models accurately predict non-MVP players, and predict MVP winners moderately well.
+- Logistical regression using the features found by random forests scored highest with an MCC of 0.60.
+
+# Future Directions
+
+- Add features pertaining to team success and player popularity.
+- Consider this as a regression problem instead of classification by predicting MVP votes received.
+
+
+# References
+
+Chicco, D., Jurman, G. The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation. BMC Genomics 21, 6 (2020). https://doi.org/10.1186/s12864-019-6413-7
+
+“Sklearn.metrics.f1_score.” Scikit, scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html. 
 
 
 
