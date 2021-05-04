@@ -117,7 +117,7 @@ names(nbaTib)
 ```
 
 
-## Variable Description
+# Variable Description
 
 - Season statistics include points, assists, rebounds, three pointers, as well as advanced statistics like Value Over Replacement and Box Plus/Minus.
 - What do MVPs have in common?
