@@ -1,7 +1,7 @@
 ---
 title: "Predicting the NBA MVP"
-author: "Mohammed Bukhattla, Justin Clifton, Maxwell Pitney, Graham Swain"
-date: "5/3/2021"
+author: "Mohammed Bukhattala, Justin Clifton,  \n Maxwell Pitney, Graham Swain"
+date: "5/6/2021"
 output:
   beamer_presentation: default
   ioslides_presentation: default
@@ -84,22 +84,15 @@ mcc <- function(table) {
 - There have been 65 different players who have won the NBA MVP.
 
 
-# MVP Histogram
+# Introduction: MVP Histogram
 
-```{r mvphist2, echo=FALSE}
-ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
+```{r mvphist1, echo=FALSE}
+ggplot(dplyr::filter(DF, was_mvp == 1), aes(x = factor(Pos), fill = Pos)) +
     geom_bar() +
-    scale_y_continuous(breaks=c(4,6,8,10)) +
-    labs(title="NBA MVPs by Position (1983 - 2017)",
+    scale_y_continuous(breaks=c(4,6,8,10,12)) +
+    labs(title="NBA MVPS by Position (1974 - 2017)",
         x ="Position", y = "frequency")
 ```
-
-
-# Can we predict the MVP?
-
-- Using player season statistics, can we predict who will win the MVP award?
-- We will attempt to classify players as MVP or non MVP.
-
 
 # Data Source 
 
@@ -111,16 +104,11 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 
 
 
-# Variable Description
+# Data Source: Variable Description
 ```{r, echo=TRUE}
 names(nbaTib)
 ```
 
-
-# Variable Description
-
-- Season statistics include points, assists, rebounds, three pointers, as well as advanced statistics like Value Over Replacement and Box Plus/Minus.
-- What do MVPs have in common?
 
 
 # FGA vs PTS Scatterplot
@@ -141,12 +129,7 @@ ggplot(dplyr::filter(nbaTib, was_mvp == 1), aes(x = Pos, fill = Pos)) +
 ```
 
 
-# Methods
-
-- How will model accuracy be found?
-- How will the results be validated?
-
-# Scoring Models
+# Methods: Scoring Models
 
 - A true positive occurs when a player was predicted as the MVP, and actually won the MVP. The true positive rate (sensitivity) will be found using this function. 
 
@@ -161,7 +144,7 @@ truePositive <- function(table) {
 ```
 
 
-# Scoring Models
+# Methods: Scoring Models
 
 - A false negative occurs when a player was predicted as a non-MVP but actually won the MVP. The false negative rate (miss rate)  will be found using this function. 
 
@@ -175,6 +158,7 @@ falseNegative <- function(table) {
 }
 ```
 
+# Methods: Scoring Models
 
 A false positive occurs when a player was predicted as the MVP but did not win the MVP.
 
@@ -190,7 +174,7 @@ falsePositive <- function(table) {
 
 
 
-# F1 score
+# Methods: F1 score
 
 - The F1 score can be interpreted as a weighted average of the precision and recall, where an F1 score reaches its best value at 1 and worst score at 0. The relative contribution of precision and recall to the F1 score are equal (scikit).
 
@@ -204,7 +188,7 @@ f1Score <- function(table) {
 }
 ```
 
-# Matthew's Correlation Coefficient
+# Methods: Matthew's Correlation Coefficient
 
 - The MCC produces a high score only if the prediction obtained good results in all of the four confusion matrix categories (true positives, false negatives, true negatives, and false positives), proportionally both to the size of positive elements and the size of negative elements in the dataset (Chicco, Gurman). 
 
@@ -221,21 +205,7 @@ mcc <- function(table) {
 ```
 
 
-# Validating the Data
-
-- Initially, the data was split randomly.
-- A very small amount of players have won the MVP award.
-- In some cases training set given by years prior to 2000 and testing set given by years later than 2000. 
-
-# Modeling and Results
-Multiple models were fit, including: 
-
-- LDA
-- KNN
-- Logistic Regression
-- Random Forest
-
-# LDA 
+# Modeling and Results: LDA 
 
 - Recall an assumption of LDA is that none of the features are heavily correlated.
 
@@ -273,10 +243,6 @@ corMat2 = cor(nonCorDF)
 corrplot(corMat2, tl.cex=0.5,method="shade")
 ```
 
-# First LDA
-
-- Fit on randomly split data.
-- Using all non-correlated features.
 
 ```{r lda, include=FALSE}
 nonCorDfLT2000 = dplyr::select(dfLT2000, -all_of(names))
@@ -291,13 +257,15 @@ ldaTable = table(ldaPred$class,testNonCor$was_mvp)
 accuracy = mean(ldaPred$class == testNonCor$was_mvp)
 ```
 
-# First LDA Confusion Matrix & Accuracy
+# Modeling and Results: First LDA Confusion Matrix
+- Fit on randomly split data.
+- Using all non-correlated features.
 ```{r echo=TRUE}
 ldaTable
 accuracy
 ```
 
-# First LDA Results
+# Modeling and Results: First LDA Results
 ```{r echo=TRUE}
 truePositive(ldaTable)
 falseNegative(ldaTable)
@@ -313,12 +281,13 @@ ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
 accuracy = mean(ldaPred$class == dfGT2000$was_mvp)
 ```
 
-# Second LDA Results
 
+
+
+
+# Modeling and Results: Second LDA Confusion Matrix and Accuracy
 - Fit on years prior to 2000, tested on data from years greater than 2000.
 - All non-correlated features used.
-
-# Second LDA Confusion Matrix and Accuracy
 ```{r echo=TRUE}
 ldaTable
 accuracy
@@ -334,9 +303,6 @@ mcc(ldaTable)
 ```
 
 
-# KNN
-
-- Fit on randomly split training and testing sets.
 
 ```{r knn, include=FALSE}
 names(cleanDF)
@@ -359,13 +325,15 @@ accuracy = mean(knnPred1 == testY)
 knnTable1 = table(knnPred1, testY)
 ```
 
-# First KNN Confusion Matrix and Accuracy
+# Modeling & Results: First KNN Confusion Matrix
+
+- Fit on randomly split training and testing sets.
 ```{r echo=TRUE}
 knnTable1
 accuracy
 ```
 
-# First KNN Results
+# Modeling & Results: First KNN Results
 ```{r echo=TRUE}
 truePositive(knnTable1)
 falseNegative(knnTable1)
@@ -381,14 +349,14 @@ accuracy = mean(knnPred2 == testY)
 knnTable2 = table(knnPred2, testY)
 ```
 
-# Second KNN Confusion Matrix and Accuracy
+# Modeling & Results: Second KNN Confusion Matrix
 ```{r echo=TRUE}
 knnTable2
 accuracy
 
 ```
 
-# Second KNN Results
+# Modeling & Results: Second KNN Results
 ```{r echo=TRUE}
 truePositive(knnTable2)
 falseNegative(knnTable2)
@@ -397,14 +365,12 @@ f1Score(knnTable2)
 mcc(knnTable2)
 ```
 
-# Random Forest
 
-- An ensemble learning method.
-- Fits multiple decision tree classifiers on various sub-samples of the dataset and uses bootstrapping to improve accuracy and control over-fitting.
-- Used as a model and for feature selection.
+
 
 
 ```{r forest, include=FALSE}
+set.seed(23)
 treeSplit = initial_split(cleanDF, prop = .5)
 treeTrain = training(treeSplit)
 treeTest  = testing(treeSplit)
@@ -422,15 +388,19 @@ accuracy = mean(predTest == treeTest$was_mvp)
 forestTable = table(predTest, treeTest$was_mvp)
 ```
 
-# Random Forest Confusion Matrix and Accuracy
+# Modeling & Results: Random Forest Confusion Matrix
 
-```{r}
+- An ensemble learning method.
+- Fits multiple decision tree classifiers on various sub-samples of the dataset and uses bootstrapping to improve accuracy and control over-fitting.
+- Used as a model and for feature selection.
+
+```{r echo=TRUE}
 forestTable
 accuracy
 ```
 
-# Random Forest Results
-```{r}
+# Modeling and Results: Random Forest Results
+```{r echo=TRUE}
 truePositive(forestTable)
 falseNegative(forestTable)
 falsePositive(forestTable)
@@ -443,42 +413,7 @@ mcc(forestTable)
 varImpPlot(mvpForest, sort=TRUE)
 ```
 
-# First Logistic
-- Uses all non-correlated features.
-- Randomly split data.
 
-```{r logistic, include=FALSE}
-logFit <- glm(was_mvp ~ ., data = nonCorDF[trainNonCor, ], family = binomial)
-
-#summary(logFit)
-
-probLog = predict(logFit, newdata = testNonCor, type = "response")
-
-predLog = ifelse(probLog > 0.5, TRUE, FALSE)
-acuracy = mean(predLog == testNonCor$was_mvp)
-logTable = table(predLog, testNonCor$was_mvp)
-
-```
-
-# First Logistic Confusion Matrix and Accuracy
-```{r echo=TRUE}
-logTable
-accuracy
-```
-
-# First LDA Results
-```{r echo=TRUE}
-truePositive(logTable)
-falseNegative(logTable)
-falsePositive(logTable)
-f1Score(logTable)
-mcc(logTable)
-```
-
-# Second Logistic
-- Using features indicated as important by random forest.
-- Fit on data split by year.
-- $VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS$.
 
 ```{r logistic3, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
@@ -494,12 +429,17 @@ logTable = table(predLog2, dfGT2000$was_mvp)
 ```
 
 
-# Second Logistic Confusion Matrix and Accuracy
+# Modeling & Results: First Logistic Confusion Matrix
+- Using features indicated as important by random forest.
+- Fit on data split by year.
+- $VORP + WS + BPM + PER + PTS + AST + TRB + BLK + STL + TOV + GS$.
+
 ```{r echo=TRUE}
 logTable
 accuracy
 ```
 
+# First Logistic Results
 ```{r echo=TRUE}
 truePositive(logTable)
 falseNegative(logTable)
@@ -508,10 +448,6 @@ f1Score(logTable)
 mcc(logTable)
 ```
 
-# Third Logistic 
-
-- This model will be making use of interactions.
-- $VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS$.
 
 ```{r logistic4, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
@@ -526,13 +462,16 @@ accuracy = mean(predLog2 == dfGT2000$was_mvp)
 logTable = table(predLog2, dfGT2000$was_mvp)
 ```
 
-# Third Logistic Confusion Matrix and Accuracy
+# Modeling & Results: Second Logistic Confusion Matrix 
+
+- This model will be making use of interactions.
+- $VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS$.
 ```{r echo=TRUE}
 logTable
 accuracy
 ```
 
-# Third Logistic Results
+# Second Logistic Results
 ```{r echo=TRUE}
 truePositive(logTable)
 falseNegative(logTable)
@@ -547,9 +486,6 @@ df2020 = as_tibble(read.csv("2020stats.csv", header = TRUE))
 advanced2020 = as_tibble(read.csv("advanced.csv", header = TRUE))
 nbaDf2020 = dplyr::inner_join(df2020, advanced2020)
 ```
-
-# Who does the model predict for this season?
-- Predict on data from 2020-2021 NBA season.
 
 ```{r logistic5, include=FALSE}
 logFit2 <- glm(was_mvp ~ VORP + WS * OWS * WS.48 + BPM + PER + PTS * FG. + AST + TRB + BLK + STL + TOV + GS , data = dfLT2000, family = binomial)
