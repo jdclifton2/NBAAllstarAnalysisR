@@ -84,15 +84,6 @@ mcc <- function(table) {
 - There have been 65 different players who have won the NBA MVP.
 
 
-# Introduction: MVP Histogram
-
-```{r mvphist1, echo=FALSE}
-ggplot(dplyr::filter(DF, was_mvp == 1), aes(x = factor(Pos), fill = Pos)) +
-    geom_bar() +
-    scale_y_continuous(breaks=c(4,6,8,10,12)) +
-    labs(title="NBA MVPS by Position (1974 - 2017)",
-        x ="Position", y = "frequency")
-```
 
 # Data Source 
 
@@ -162,7 +153,7 @@ falseNegative <- function(table) {
 
 A false positive occurs when a player was predicted as the MVP but did not win the MVP.
 
-```{r}
+```{r, echo=TRUE}
 falsePositive <- function(table) {
   tp = table[2,2]
   tn = table[1,1]
@@ -204,6 +195,9 @@ mcc <- function(table) {
 }
 ```
 
+# Methods: Validating the Data
+- Initially, the data was split randomly.
+- A very small amount of players have won the MVP award. In some cases training set given by years prior to 2000 and testing set given by years later than 2000.
 
 # Modeling and Results: LDA 
 
