@@ -259,7 +259,7 @@ ldaTable
 accuracy
 ```
 
-# Modeling and Results: First LDA Results
+# Modeling and Results: LDA Results
 ```{r echo=TRUE}
 truePositive(ldaTable)
 falseNegative(ldaTable)
@@ -273,27 +273,6 @@ ldaFit = lda(was_mvp ~ ., data = nonCorDfLT2000)
 ldaPred = predict(ldaFit, nonCorDfGT2000)
 ldaTable = table(ldaPred$class,dfGT2000$was_mvp)
 accuracy = mean(ldaPred$class == dfGT2000$was_mvp)
-```
-
-
-
-
-
-# Modeling and Results: Second LDA Confusion Matrix and Accuracy
-- Fit on years prior to 2000, tested on data from years greater than 2000.
-- All non-correlated features used.
-```{r echo=TRUE}
-ldaTable
-accuracy
-```
-
-# Second LDA Results 
-```{r echo=TRUE}
-truePositive(ldaTable)
-falseNegative(ldaTable)
-falsePositive(ldaTable)
-f1Score(ldaTable)
-mcc(ldaTable)
 ```
 
 
@@ -465,7 +444,7 @@ logTable
 accuracy
 ```
 
-# Second Logistic Results
+# Logistic Results
 ```{r echo=TRUE}
 truePositive(logTable)
 falseNegative(logTable)
