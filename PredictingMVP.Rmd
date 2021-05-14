@@ -3,6 +3,7 @@ title: "Predicting The NBA MVP"
 author: "Mohammed Bukhattala, Justin Clifton, Maxwell Pitney, Graham Swain"
 date: "05/04/2021"
 output:
+  pdf_document: default
   word_document: default
   html_document: default
 abstract: 'The NBA''s most valuable player award is given to one player every NBA
